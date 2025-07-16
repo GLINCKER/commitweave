@@ -1,0 +1,69 @@
+{
+  "name": "@typeweaver/commitweave",
+  "version": "0.1.0",
+  "description": "A modern CLI to write smart, structured, and beautiful git commit messages with emoji support, conventional commit rules, AI-powered summaries (optional), and built-in hooks.",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs",
+      "types": "./dist/index.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "commitweave": "./dist/bin.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "glinr-commit.json"
+  ],
+  "scripts": {
+    "build": "npm run clean && npm run build:lib && npm run build:post",
+    "build:lib": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "build:post": "npm run build:prepare-dist",
+    "build:prepare-dist": "node scripts/prepare-dist.js",
+    "dev": "tsx watch bin/index.ts",
+    "prepublishOnly": "npm run build",
+    "start": "node ./dist/bin.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "git",
+    "commit",
+    "cli",
+    "conventional-commits",
+    "emoji",
+    "ai"
+  ],
+  "author": "TypeWeaver",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "enquirer": "^2.4.1",
+    "simple-git": "^3.20.0",
+    "zod": "^3.22.4",
+    "cosmiconfig": "^9.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "tsx": "^4.6.2",
+    "@types/node": "^20.10.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/typeweaver/commitweave.git"
+  },
+  "bugs": {
+    "url": "https://github.com/typeweaver/commitweave/issues"
+  },
+  "homepage": "https://github.com/typeweaver/commitweave#readme"
+}

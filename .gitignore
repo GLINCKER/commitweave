@@ -1,0 +1,140 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Diagnostic reports
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+*.tmp
+.claude
+
+# Dependency directories
+node_modules/
+bower_components/
+jspm_packages/
+web_modules/
+
+# Build output
+dist/
+build/
+lib/
+out/
+temp/
+tmp/
+bundle/
+webpack-bundle/
+.nuxt/
+.next/
+out/
+.cache/
+.parcel-cache
+.vuepress/dist
+.docusaurus
+
+# Coverage
+coverage/
+.nyc_output/
+*.lcov
+coverage-final.json
+
+# TypeScript
+*.tsbuildinfo
+*.d.ts.map
+
+# ESLint / Stylelint
+.eslintcache
+.stylelintcache
+
+# Microbundle / Rollup / Esbuild
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional npm/yarn/pnpm files
+.npm
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Lock and temp files
+*.orig
+*.bak
+*.tmp.*
+.lock-wscript
+
+# REPL / History
+.node_repl_history
+
+# Editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS-generated files
+.DS_Store
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Test / Debug artifacts
+test/fixtures/
+benchmark/
+jest.config.js
+*.stackdump
+
+# Firebase / Serverless / Turborepo / Vercel
+.firebase/
+.serverless/
+.turbo/
+.vercel
+
+# Docs / API
+docs/api/
+
+# Local config
+config/local.json
+config/local.js
+config/local.ts
+
+# Git hooks (if using Husky)
+.husky/_
+
+# Yarn integrity
+.yarn-integrity
+
+# Output of `npm pack`
+*.tgz
+
+# Playwright / Cypress
+playwright-report/
+test-results/
+cypress/videos/
+cypress/screenshots/
+
+# Changelog drafts
+CHANGELOG.draft.md
+
+# Ignore all env files except examples
+.env
+.env.*
+!.env.example
+!.env.sample

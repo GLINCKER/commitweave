@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "commitTypes": [
+    {
+      "type": "feat",
+      "emoji": "✨",
+      "description": "A new feature",
+      "aliases": ["feature", "new"]
+    },
+    {
+      "type": "fix",
+      "emoji": "🐛",
+      "description": "A bug fix",
+      "aliases": ["bugfix", "hotfix"]
+    },
+    {
+      "type": "docs",
+      "emoji": "📚",
+      "description": "Documentation only changes",
+      "aliases": ["documentation"]
+    },
+    {
+      "type": "style",
+      "emoji": "💎",
+      "description": "Changes that do not affect the meaning of the code",
+      "aliases": ["formatting"]
+    },
+    {
+      "type": "refactor",
+      "emoji": "📦",
+      "description": "A code change that neither fixes a bug nor adds a feature",
+      "aliases": ["refactoring"]
+    },
+    {
+      "type": "perf",
+      "emoji": "🚀",
+      "description": "A code change that improves performance",
+      "aliases": ["performance", "optimization"]
+    },
+    {
+      "type": "test",
+      "emoji": "🚨",
+      "description": "Adding missing tests or correcting existing tests",
+      "aliases": ["testing"]
+    },
+    {
+      "type": "build",
+      "emoji": "🛠",
+      "description": "Changes that affect the build system or external dependencies",
+      "aliases": ["ci", "deps"]
+    },
+    {
+      "type": "ci",
+      "emoji": "⚙️",
+      "description": "Changes to our CI configuration files and scripts",
+      "aliases": ["continuous-integration"]
+    },
+    {
+      "type": "chore",
+      "emoji": "♻️",
+      "description": "Other changes that don't modify src or test files",
+      "aliases": ["maintenance"]
+    },
+    {
+      "type": "revert",
+      "emoji": "🗑",
+      "description": "Reverts a previous commit",
+      "aliases": ["rollback"]
+    }
+  ],
+  "emojiEnabled": true,
+  "conventionalCommits": true,
+  "aiSummary": false,
+  "maxSubjectLength": 50,
+  "maxBodyLength": 72,
+  "ai": {
+    "provider": "mock",
+    "apiKey": "",
+    "model": "",
+    "maxTokens": 150,
+    "temperature": 0.7
+  },
+  "hooks": {
+    "preCommit": [],
+    "postCommit": []
+  }
+}
