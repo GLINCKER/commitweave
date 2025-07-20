@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: ["*"]  # Run on all branches (including develop, feature branches)
   pull_request:
-    branches: [main]
+    branches: [main]  # Run on PRs to main
 
 jobs:
   test:
