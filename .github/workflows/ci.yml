@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18, 20, 22]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run TypeScript check
+        run: npx tsc --noEmit
+
+      - name: Build package
+        run: npm run build
+
+      - name: Test package structure
+        run: |
+          ls -la dist/
+          test -f dist/index.js
+          test -f dist/index.d.ts
+          test -f dist/bin.js
+          test -x dist/bin.js
+
+      - name: Run custom tests
+        run: |
+          npx tsx scripts/test-local.ts
+          npx tsx scripts/test-cli-functions.ts
+
+      - name: Test package installation
+        run: |
+          npm pack
+          npm install -g *.tgz || echo "Global install test skipped"

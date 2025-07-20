@@ -1,6 +1,6 @@
 {
   "name": "@typeweaver/commitweave",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "description": "A modern CLI to write smart, structured, and beautiful git commit messages with emoji support, conventional commit rules, AI-powered summaries (optional), and built-in hooks.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -31,7 +31,7 @@
     "dev": "tsx watch bin/index.ts",
     "prepublishOnly": "npm run build",
     "start": "node ./dist/bin.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npx tsx scripts/test-local.ts && npx tsx scripts/test-cli-functions.ts"
   },
   "keywords": [
     "git",
@@ -44,26 +44,27 @@
   "author": "TypeWeaver",
   "license": "MIT",
   "dependencies": {
+    "@typeweaver/commitweave": "file:typeweaver-commitweave-0.1.0.tgz",
     "chalk": "^5.3.0",
+    "cosmiconfig": "^9.0.0",
     "enquirer": "^2.4.1",
     "simple-git": "^3.20.0",
-    "zod": "^3.22.4",
-    "cosmiconfig": "^9.0.0"
+    "zod": "^3.22.4"
   },
   "devDependencies": {
-    "typescript": "^5.3.3",
+    "@types/node": "^20.10.5",
     "tsx": "^4.6.2",
-    "@types/node": "^20.10.5"
+    "typescript": "^5.3.3"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/typeweaver/commitweave.git"
+    "url": "git+https://github.com/GLINCKER/commitweave.git"
   },
   "bugs": {
-    "url": "https://github.com/typeweaver/commitweave/issues"
+    "url": "https://github.com/GLINCKER/commitweave/issues"
   },
-  "homepage": "https://github.com/typeweaver/commitweave#readme"
+  "homepage": "https://github.com/GLINCKER/commitweave#readme"
 }

@@ -366,7 +366,7 @@ const mockProvider = new MockAIProvider();
 
 ```bash
 # Clone the repository
-git clone https://github.com/typeweaver/commitweave.git
+git clone https://github.com/GLINCKER/commitweave.git
 cd commitweave
 
 # Install dependencies
@@ -514,8 +514,8 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 <div align="center">
 
-**Made with ❤️ by [TypeWeaver](https://github.com/typeweaver)**
+**Made with ❤️ by [TypeWeaver](https://typeweaver.com/)**
 
-[npm](https://www.npmjs.com/package/@typeweaver/commitweave) • [GitHub](https://github.com/typeweaver/commitweave) • [Issues](https://github.com/typeweaver/commitweave/issues)
+[npm](https://www.npmjs.com/package/@typeweaver/commitweave) • [GitHub](https://github.com/GLINCKER/commitweave) • [Issues](https://github.com/GLINCKER/commitweave/issues)
 
 </div>

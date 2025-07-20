@@ -70,6 +70,40 @@ export class GitUtils {
     }
   }
 
+  async stageAllAndCommit(message: string, options: { dryRun?: boolean } = {}): Promise<string> {
+    try {
+      if (!(await this.isGitRepository())) {
+        throw new Error('Not a git repository. Please run "git init" to initialize a repository.');
+      }
+
+      if (options.dryRun) {
+        const status = await this.getStatus();
+        const unstagedFiles = [...status.modified, ...status.not_added, ...status.deleted];
+        
+        if (unstagedFiles.length === 0) {
+          return '[DRY RUN] No files to stage and commit';
+        }
+        
+        return `[DRY RUN] Would stage ${unstagedFiles.length} file(s) and commit with message: "${message}"`;
+      }
+
+      await this.stageAll();
+      
+      const status = await this.getStatus();
+      if (status.staged.length === 0) {
+        throw new Error('No staged changes to commit. Make sure you have changes to commit.');
+      }
+      
+      const result = await this.git.commit(message);
+      return `Successfully committed: ${result.commit} (${status.staged.length} file(s) staged)`;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Git operation failed: ${error.message}`);
+      }
+      throw new Error(`Git operation failed: ${String(error)}`);
+    }
+  }
+
   async getCurrentBranch(): Promise<string> {
     const branchSummary = await this.git.branch();
     return branchSummary.current;
@@ -120,6 +154,12 @@ export async function createGitRepository(workingDir?: string): Promise<GitRepos
     git: gitUtils['git'],
     rootDir: gitUtils['rootDir']
   };
+}
+
+export async function stageAllAndCommit(message: string, options: { dryRun?: boolean; workingDir?: string } = {}): Promise<string> {
+  const gitUtils = new GitUtils(options.workingDir);
+  const commitOptions = options.dryRun !== undefined ? { dryRun: options.dryRun } : {};
+  return await gitUtils.stageAllAndCommit(message, commitOptions);
 }
 
 export function formatFilePath(filePath: string, maxLength = 50): string {

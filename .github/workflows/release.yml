@@ -1,0 +1,106 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.0-beta.1 or 1.0.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark as pre-release (beta/alpha)'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine release type
+        id: release-type
+        run: |
+          TAG_NAME="${{ github.ref_name || format('v{0}', github.event.inputs.version) }}"
+          if [[ "$TAG_NAME" == *"beta"* ]] || [[ "$TAG_NAME" == *"alpha"* ]] || [[ "${{ github.event.inputs.prerelease }}" == "true" ]]; then
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+            echo "release_type=Pre-release" >> $GITHUB_OUTPUT
+          else
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+            echo "release_type=Release" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name || format('v{0}', github.event.inputs.version) }}
+          release_name: ${{ steps.release-type.outputs.release_type }} ${{ github.ref_name || format('v{0}', github.event.inputs.version) }}
+          body: |
+            ## What's Changed
+            
+            - Automated release of commitweave CLI tool
+            - Enhanced commit message creation with emoji support
+            - Conventional commits compliance
+            - Interactive Git integration
+            
+            ## Installation
+            
+            ### Stable Release
+            ```bash
+            npm install -g @typeweaver/commitweave
+            ```
+            
+            ### Beta Release
+            ```bash
+            npm install -g @typeweaver/commitweave@beta
+            ```
+            
+            ## Usage
+            
+            ```bash
+            commitweave        # Start interactive commit creation
+            commitweave init   # Initialize configuration
+            ```
+            
+            Full changelog: https://github.com/GLINCKER/commitweave/compare/v0.1.0-beta.1...${{ github.ref_name || format('v{0}', github.event.inputs.version) }}
+          draft: false
+          prerelease: ${{ steps.release-type.outputs.prerelease }}
+
+  publish-npm:
+    needs: create-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build package
+        run: npm run build
+
+      - name: Publish to NPM
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
