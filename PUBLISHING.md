@@ -3,7 +3,7 @@
 ## Versioning Strategy
 
 ### Beta Phase (Current)
-- **Current version**: `0.1.0-beta.1`
+- **Current version**: `0.1.0-beta.3`
 - **NPM tag**: `beta`
 - **Installation**: `npm install -g @typeweaver/commitweave@beta`
 
@@ -30,15 +30,15 @@
 #### Beta Releases (Recommended for now)
 1. Update version in `package.json`:
    ```bash
-   npm version 0.1.0-beta.2 --no-git-tag-version
+   npm version 0.1.0-beta.3 --no-git-tag-version
    ```
 2. Create and push beta tag:
    ```bash
    git add package.json
-   git commit -m "chore: bump version to 0.1.0-beta.2"
-   git tag v0.1.0-beta.2
+   git commit -m "chore: bump version to 0.1.0-beta.3"
+   git tag v0.1.0-beta.3
    git push origin main
-   git push origin v0.1.0-beta.2
+   git push origin v0.1.0-beta.3
    ```
 
 #### Stable Releases (Future)
@@ -81,7 +81,7 @@ npm install -g @typeweaver/commitweave@beta
 npm install -g @typeweaver/commitweave
 
 # Specific version
-npm install -g @typeweaver/commitweave@0.1.0-beta.1
+npm install -g @typeweaver/commitweave@0.1.0-beta.3
 ```
 
 ### 5. Pre-publish Checklist
