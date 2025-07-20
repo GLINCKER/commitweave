@@ -12,12 +12,12 @@ interface ValidationResult {
 }
 
 interface ParsedCommit {
-  type?: string;
-  scope?: string;
-  breaking?: boolean;
-  subject?: string;
-  body?: string;
-  footer?: string;
+  type?: string | undefined;
+  scope?: string | undefined;
+  breaking?: boolean | undefined;
+  subject?: string | undefined;
+  body?: string | undefined;
+  footer?: string | undefined;
 }
 
 /**
@@ -91,21 +91,23 @@ function parseCommitMessage(message: string): ParsedCommit {
   if (match) {
     const [, type, scopeWithParens, breaking, subject] = match;
     const scope = scopeWithParens ? scopeWithParens.slice(1, -1) : undefined;
+    const bodyText = lines.slice(2).join('\n').trim();
     
     return {
       type,
       scope,
       breaking: !!breaking,
       subject: subject?.trim(),
-      body: lines.slice(2).join('\n').trim() || undefined,
+      body: bodyText || undefined,
       footer: undefined // Could be parsed more thoroughly if needed
     };
   }
   
   // If not conventional format, treat entire header as subject
+  const bodyText = lines.slice(2).join('\n').trim();
   return {
     subject: header.trim(),
-    body: lines.slice(2).join('\n').trim() || undefined
+    body: bodyText || undefined
   };
 }
 

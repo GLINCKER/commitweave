@@ -10,7 +10,7 @@ import { stageAllAndCommit } from '../src/utils/git.js';
 import { generateAISummary } from '../src/utils/ai.js';
 import { ConfigSchema, type Config } from '../src/types/config.js';
 import { defaultConfig } from '../src/config/defaultConfig.js';
-import { printBanner, showLoadingAnimation, printWelcome, printFeatureHighlight, BRAND_COLORS } from '../src/ui/banner.js';
+import { printBanner, showLoadingAnimation, printFeatureHighlight, BRAND_COLORS } from '../src/ui/banner.js';
 
 async function loadConfig(): Promise<Config> {
   try {
