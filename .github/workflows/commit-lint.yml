@@ -1,0 +1,43 @@
+name: Commit Message Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  commit-lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch all history to check commits
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build project
+      run: npm run build
+    
+    - name: Validate commit message
+      run: npm run check
+      # Alternative: use the CLI directly
+      # run: npx commitweave check
+    
+    - name: Validate all commits in PR (for pull requests)
+      if: github.event_name == 'pull_request'
+      run: |
+        # Check all commits in the PR
+        for commit in $(git rev-list ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}); do
+          echo "Checking commit: $commit"
+          git log -1 --pretty=%B $commit | npx tsx scripts/check-commit.ts || exit 1
+        done
