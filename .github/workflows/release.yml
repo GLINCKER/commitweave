@@ -19,8 +19,8 @@ on:
 jobs:
   create-release:
     runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    permissions:
+      contents: write
       
     steps:
       - name: Checkout code
@@ -31,23 +31,21 @@ jobs:
         run: |
           TAG_NAME="${{ github.ref_name || format('v{0}', github.event.inputs.version) }}"
           if [[ "$TAG_NAME" == *"beta"* ]] || [[ "$TAG_NAME" == *"alpha"* ]] || [[ "${{ github.event.inputs.prerelease }}" == "true" ]]; then
-            echo "prerelease=true" >> $GITHUB_OUTPUT
+            echo "prerelease=--prerelease" >> $GITHUB_OUTPUT
             echo "release_type=Pre-release" >> $GITHUB_OUTPUT
           else
-            echo "prerelease=false" >> $GITHUB_OUTPUT
+            echo "prerelease=" >> $GITHUB_OUTPUT
             echo "release_type=Release" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref_name || format('v{0}', github.event.inputs.version) }}
-          release_name: ${{ steps.release-type.outputs.release_type }} ${{ github.ref_name || format('v{0}', github.event.inputs.version) }}
-          body: |
-            ## What's Changed
+      - name: Create Release with GitHub CLI
+        run: |
+          TAG_NAME="${{ github.ref_name || format('v{0}', github.event.inputs.version) }}"
+          RELEASE_TITLE="${{ steps.release-type.outputs.release_type }} $TAG_NAME"
+          
+          gh release create "$TAG_NAME" \
+            --title "$RELEASE_TITLE" \
+            --notes "## What's Changed
             
             - Automated release of commitweave CLI tool
             - Enhanced commit message creation with emoji support
@@ -57,25 +55,26 @@ jobs:
             ## Installation
             
             ### Stable Release
-            ```bash
+            \`\`\`bash
             npm install -g @typeweaver/commitweave
-            ```
+            \`\`\`
             
             ### Beta Release
-            ```bash
+            \`\`\`bash
             npm install -g @typeweaver/commitweave@beta
-            ```
+            \`\`\`
             
             ## Usage
             
-            ```bash
+            \`\`\`bash
             commitweave        # Start interactive commit creation
             commitweave init   # Initialize configuration
-            ```
+            \`\`\`
             
-            Full changelog: https://github.com/GLINCKER/commitweave/compare/v0.1.0-beta.1...${{ github.ref_name || format('v{0}', github.event.inputs.version) }}
-          draft: false
-          prerelease: ${{ steps.release-type.outputs.prerelease }}
+            Full changelog: https://github.com/GLINCKER/commitweave/commits/$TAG_NAME" \
+            ${{ steps.release-type.outputs.prerelease }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-npm:
     needs: create-release
