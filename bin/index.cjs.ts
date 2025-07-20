@@ -441,6 +441,12 @@ async function handleCheckCommand() {
     console.log(commitMessage);
     console.log('');
     
+    // Check if this is a special commit that should be excluded from validation
+    if (isSpecialCommit(commitMessage)) {
+      console.log('✓ Special commit detected (merge/revert/fixup) - skipping validation');
+      process.exit(0);
+    }
+    
     // Use inline validation logic for CommonJS compatibility
     const validation = validateCommitMessage(commitMessage, config);
     
@@ -473,6 +479,32 @@ async function handleCheckCommand() {
     console.error('Error:', error instanceof Error ? error.message : 'Unknown error');
     process.exit(1);
   }
+}
+
+function isSpecialCommit(message: string): boolean {
+  const header = message.split('\n')[0] || '';
+  
+  // Check for merge commits
+  if (header.startsWith('Merge ')) {
+    return true;
+  }
+  
+  // Check for revert commits
+  if (header.startsWith('Revert ')) {
+    return true;
+  }
+  
+  // Check for fixup commits
+  if (header.startsWith('fixup! ') || header.startsWith('squash! ')) {
+    return true;
+  }
+  
+  // Check for initial commits
+  if (header.toLowerCase().includes('initial commit')) {
+    return true;
+  }
+  
+  return false;
 }
 
 function parseCommitMessage(message: string) {

@@ -116,14 +116,6 @@ export async function typeWriter(text: string, delay: number = 50): Promise<void
   console.log('');
 }
 
-export function printWelcome(): void {
-  console.log(chalk.hex(BRAND_COLORS.muted)('┌─────────────────────────────────────────────────────────────────────────────────────────┐'));
-  console.log(chalk.hex(BRAND_COLORS.muted)('│') + chalk.hex(BRAND_COLORS.primary).bold('                             Welcome to Commitweave! 🧶                                 ') + chalk.hex(BRAND_COLORS.muted)('│'));
-  console.log(chalk.hex(BRAND_COLORS.muted)('│') + chalk.white('                    A modern CLI for smart, structured git commits                      ') + chalk.hex(BRAND_COLORS.muted)('│'));
-  console.log(chalk.hex(BRAND_COLORS.muted)('│') + chalk.hex(BRAND_COLORS.accent)('                           Powered by GLINR STUDIOS                                     ') + chalk.hex(BRAND_COLORS.muted)('│'));
-  console.log(chalk.hex(BRAND_COLORS.muted)('└─────────────────────────────────────────────────────────────────────────────────────────┘'));
-  console.log('');
-}
 
 export function printFeatureHighlight(): void {
   console.log(chalk.hex(BRAND_COLORS.accent)('✨ Features:'));
