@@ -3,7 +3,7 @@
 ## 🎯 **Current Status: Ready for Beta Release**
 
 ### ✅ **Versioning Setup Complete**
-- **Current version**: `0.1.0-beta.1`
+- **Current version**: `0.1.0-beta.3`
 - **NPM Strategy**: Beta releases on `@beta` tag, stable releases on `@latest`
 - **Single main branch**: All development and releases from `main`
 
@@ -12,14 +12,14 @@
 ### Beta Release (Recommended First Release)
 ```bash
 # Quick release using script
-./scripts/release.sh beta 0.1.0-beta.1
+./scripts/release.sh beta 0.1.0-beta.3
 
 # Manual steps (alternative)
 git add .
 git commit -m "feat: initial beta release"
-git tag v0.1.0-beta.1
+git tag v0.1.0-beta.3
 git push origin main
-git push origin v0.1.0-beta.1
+git push origin v0.1.0-beta.3
 ```
 
 ### Installation Commands After Release
@@ -28,7 +28,7 @@ git push origin v0.1.0-beta.1
 npm install -g @typeweaver/commitweave@beta
 
 # Specific version
-npm install -g @typeweaver/commitweave@0.1.0-beta.1
+npm install -g @typeweaver/commitweave@0.1.0-beta.3
 ```
 
 ## 📋 **Pre-Release Checklist**
@@ -45,8 +45,8 @@ npm install -g @typeweaver/commitweave@0.1.0-beta.1
 - [ ] Package structure is correct ✅
 
 ### Versioning
-- [ ] Version follows beta format: `0.1.0-beta.X` ✅
-- [ ] Tag will follow format: `v0.1.0-beta.X` ✅
+- [ ] Version follows beta format: `0.1.0-beta.3` ✅
+- [ ] Tag will follow format: `v0.1.0-beta.3` ✅
 - [ ] Workflows configured for beta releases ✅
 
 ## 🔄 **Automated Workflow**
@@ -99,4 +99,4 @@ commitweave init
 
 Your CommitWeave package is ready for beta release. The versioning strategy is sound, workflows are configured, and the package builds successfully.
 
-**To release**: Just run `./scripts/release.sh beta 0.1.0-beta.1` when ready!
+**To release**: Just run `./scripts/release.sh beta 0.1.0-beta.3` when ready!
