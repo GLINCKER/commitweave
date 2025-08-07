@@ -1,18 +1,30 @@
 #!/usr/bin/env node
 
-import chalk from 'chalk';
-import { prompt } from 'enquirer';
-import { writeFile, access, readFile } from 'fs/promises';
-import { join } from 'path';
-import { simpleGit } from 'simple-git';
-import { createCommitFlow } from '../src/cli/createCommitFlow.js';
-import { stageAllAndCommit } from '../src/utils/git.js';
-import { generateAISummary } from '../src/utils/ai.js';
-import { ConfigSchema, type Config } from '../src/types/config.js';
-import { defaultConfig } from '../src/config/defaultConfig.js';
-import { printBanner, showLoadingAnimation, printFeatureHighlight, BRAND_COLORS } from '../src/ui/banner.js';
+// Performance tracking
+import { maybeReport } from '../src/utils/perf.js';
 
-async function loadConfig(): Promise<Config> {
+// Core imports needed for startup
+import { join } from 'path';
+import { readFile } from 'fs/promises';
+import { parseFlags, shouldUseFancyUI, isInteractiveMode, isConfigCommand } from '../src/cli/flags.js';
+import { lazy } from '../src/utils/lazyImport.js';
+
+// Lazy imports - only load when needed
+let chalk: any;
+let ConfigSchema: any;
+let defaultConfig: any;
+
+async function loadConfig(): Promise<any> {
+  // Lazy load config dependencies
+  if (!ConfigSchema || !defaultConfig) {
+    const [configModule, defaultConfigModule] = await Promise.all([
+      lazy(() => import('../src/types/config.js')),
+      lazy(() => import('../src/config/defaultConfig.js'))
+    ]);
+    ConfigSchema = configModule.ConfigSchema;
+    defaultConfig = defaultConfigModule.defaultConfig;
+  }
+
   try {
     const configPath = join(process.cwd(), 'glinr-commit.json');
     const configFile = await readFile(configPath, 'utf-8');
@@ -24,51 +36,117 @@ async function loadConfig(): Promise<Config> {
 }
 
 async function main() {
-  const args = process.argv.slice(2);
-  const aiFlag = args.includes('--ai');
-  const isInteractiveMode = !aiFlag && !args.includes('init') && !args.includes('check') && !args.includes('--help') && !args.includes('-h');
+  const flags = parseFlags();
   
-  // Show beautiful banner for interactive mode
-  if (isInteractiveMode) {
+  // Load chalk for basic output (lazy loaded)
+  if (!chalk) {
+    chalk = (await lazy(() => import('chalk'))).default;
+  }
+
+  // Handle version flag quickly for benchmarks
+  if (flags.version) {
+    const pkg = JSON.parse(await readFile(join(process.cwd(), 'package.json'), 'utf-8'));
+    console.log(pkg.version || '0.1.0-beta.4');
+    maybeReport();
+    return;
+  }
+
+  const useFancyUI = shouldUseFancyUI(flags);
+  const interactive = isInteractiveMode(flags);
+  const isConfig = isConfigCommand(flags);
+  
+  // Show beautiful banner for interactive mode (gated behind fancy UI flag)
+  if (interactive && useFancyUI) {
+    const { printBanner, showLoadingAnimation, printFeatureHighlight } = 
+      await lazy(() => import('../src/ui/banner.js'));
     printBanner();
     await showLoadingAnimation('Initializing Commitweave', 1500);
     console.log('');
     printFeatureHighlight();
-  } else {
-    // Show compact banner for direct commands
+  } else if (!flags.plain) {
+    // Show minimal banner for non-plain mode
+    const { BRAND_COLORS } = await lazy(() => import('../src/ui/banner.js'));
     console.log(chalk.hex(BRAND_COLORS.primary).bold('🧶 Commitweave'));
     console.log(chalk.hex(BRAND_COLORS.muted)('Smart, structured, and beautiful git commits'));
-    console.log(chalk.hex(BRAND_COLORS.muted)('Powered by ') + 
-                chalk.hex(BRAND_COLORS.accent).bold('GLINR STUDIOS') + 
-                chalk.hex(BRAND_COLORS.muted)(' • ') + 
-                chalk.hex(BRAND_COLORS.primary)('@typeweaver\n'));
+    if (!isConfig && !flags.version) {
+      console.log(chalk.hex(BRAND_COLORS.muted)('Powered by ') + 
+                  chalk.hex(BRAND_COLORS.accent).bold('GLINR STUDIOS') + 
+                  chalk.hex(BRAND_COLORS.muted)(' • ') + 
+                  chalk.hex(BRAND_COLORS.primary)('@typeweaver\n'));
+    }
   }
 
   try {
+    // Handle configuration commands first
+    if (flags.export) {
+      const { exportConfig, parseExportArgs } = await lazy(() => import('../src/cli/commands/exportConfig.js'));
+      const options = parseExportArgs(flags._.slice(1));
+      await exportConfig(options);
+      maybeReport();
+      return;
+    }
+
+    if (flags.import) {
+      const { importConfig, parseImportArgs } = await lazy(() => import('../src/cli/commands/importConfig.js'));
+      const { source, options } = parseImportArgs(flags._);
+      await importConfig(source, options);
+      maybeReport();
+      return;
+    }
+
+    if (flags.list) {
+      const { listConfig } = await lazy(() => import('../src/cli/commands/listConfig.js'));
+      await listConfig();
+      maybeReport();
+      return;
+    }
+
+    if (flags.reset) {
+      const { resetConfig, parseResetArgs } = await lazy(() => import('../src/cli/commands/resetConfig.js'));
+      const options = parseResetArgs(flags._.slice(1));
+      await resetConfig(options);
+      maybeReport();
+      return;
+    }
+
+    if (flags.doctor) {
+      const { doctorConfig } = await lazy(() => import('../src/cli/commands/doctorConfig.js'));
+      await doctorConfig();
+      maybeReport();
+      return;
+    }
+
     // Handle AI flag directly without prompting
-    if (aiFlag) {
+    if (flags.ai) {
       console.log(''); // Add some spacing after the compact banner
-      await handleAICommitCommand();
+      await handleAICommitCommand(useFancyUI);
+      maybeReport();
       return;
     }
 
     // Handle other direct commands
-    if (args.includes('init')) {
+    if (flags.init) {
       await handleInitCommand();
+      maybeReport();
       return;
     }
 
-    if (args.includes('check')) {
+    if (flags.check) {
       await handleCheckCommand();
+      maybeReport();
       return;
     }
 
-    if (args.includes('--help') || args.includes('-h')) {
+    if (flags.help) {
       showHelp();
+      maybeReport();
       return;
     }
 
     // Default interactive mode with enhanced UI
+    const { BRAND_COLORS } = await lazy(() => import('../src/ui/banner.js'));
+    const { prompt } = await lazy(() => import('enquirer'));
+    
     console.log(chalk.hex(BRAND_COLORS.accent).bold('🚀 What would you like to do today?'));
     console.log('');
     
@@ -98,6 +176,11 @@ async function main() {
           hint: 'Check if your latest commit follows conventions'
         },
         { 
+          name: 'config', 
+          message: '⚙️  Configuration',
+          hint: 'Manage your CommitWeave settings'
+        },
+        { 
           name: 'help', 
           message: '❓ Show help',
           hint: 'View all available commands and options'
@@ -107,10 +190,10 @@ async function main() {
 
     switch ((response as { action: string }).action) {
       case 'create':
-        await handleCreateCommand();
+        await handleCreateCommand(useFancyUI);
         break;
       case 'ai':
-        await handleAICommitCommand();
+        await handleAICommitCommand(useFancyUI);
         break;
       case 'init':
         await handleInitCommand();
@@ -118,12 +201,24 @@ async function main() {
       case 'check':
         await handleCheckCommand();
         break;
+      case 'config':
+        await handleConfigSubmenu();
+        break;
       case 'help':
         showHelp();
         break;
     }
+    
+    maybeReport();
   } catch (error) {
     if (error instanceof Error && error.name === 'ExitPromptError') {
+      const { BRAND_COLORS } = await lazy(() => import('../src/ui/banner.js')).catch(() => ({ 
+        BRAND_COLORS: {
+          muted: '#6c757d',
+          primary: '#8b008b',
+          accent: '#e94057'
+        } 
+      }));
       console.log(chalk.hex(BRAND_COLORS.muted)('\n👋 Thanks for using Commitweave!'));
       console.log(chalk.hex(BRAND_COLORS.primary)('   Happy committing! 🧶✨'));
       console.log(chalk.hex(BRAND_COLORS.muted)('   ') + 
@@ -132,13 +227,20 @@ async function main() {
                   chalk.hex(BRAND_COLORS.primary)('@typeweaver'));
       globalThis.process?.exit?.(0);
     }
+    const { BRAND_COLORS } = await lazy(() => import('../src/ui/banner.js')).catch(() => ({ 
+        BRAND_COLORS: { error: '#ff6b6b' } 
+      }));
     console.error(chalk.hex(BRAND_COLORS.error)('💥 An error occurred:'), error);
+    maybeReport();
     globalThis.process?.exit?.(1);
   }
 }
 
 async function handleInitCommand() {
   try {
+    const { access, writeFile } = await lazy(() => import('fs/promises'));
+    const { prompt } = await lazy(() => import('enquirer'));
+    
     const configPath = join(process.cwd(), 'glinr-commit.json');
     
     // Check if file already exists
@@ -206,16 +308,22 @@ async function handleInitCommand() {
   }
 }
 
-async function handleCreateCommand() {
+async function handleCreateCommand(useFancyUI: boolean = false) {
   try {
-    console.log(chalk.hex(BRAND_COLORS.primary)('╭─────────────────────────────────────────────╮'));
-    console.log(chalk.hex(BRAND_COLORS.primary)('│') + chalk.bold.white('         🚀 Commit Creation Wizard           ') + chalk.hex(BRAND_COLORS.primary)('│'));
-    console.log(chalk.hex(BRAND_COLORS.primary)('╰─────────────────────────────────────────────╯'));
-    console.log('');
+    const { BRAND_COLORS } = await lazy(() => import('../src/ui/banner.js'));
     
-    await showLoadingAnimation('Preparing commit builder', 800);
-    console.log('');
+    if (useFancyUI) {
+      const { showLoadingAnimation } = await lazy(() => import('../src/ui/banner.js'));
+      console.log(chalk.hex(BRAND_COLORS.primary)('╭─────────────────────────────────────────────╮'));
+      console.log(chalk.hex(BRAND_COLORS.primary)('│') + chalk.bold.white('         🚀 Commit Creation Wizard           ') + chalk.hex(BRAND_COLORS.primary)('│'));
+      console.log(chalk.hex(BRAND_COLORS.primary)('╰─────────────────────────────────────────────╯'));
+      console.log('');
+      
+      await showLoadingAnimation('Preparing commit builder', 800);
+      console.log('');
+    }
     
+    const { createCommitFlow } = await lazy(() => import('../src/cli/createCommitFlow.js'));
     const result = await createCommitFlow();
     
     if (result.cancelled) {
@@ -224,12 +332,18 @@ async function handleCreateCommand() {
       return;
     }
     
-    console.log(chalk.hex(BRAND_COLORS.accent)('\n╭─────────────────────────────────────────────╮'));
-    console.log(chalk.hex(BRAND_COLORS.accent)('│') + chalk.bold.white('         📦 Finalizing Your Commit          ') + chalk.hex(BRAND_COLORS.accent)('│'));
-    console.log(chalk.hex(BRAND_COLORS.accent)('╰─────────────────────────────────────────────╯'));
+    if (useFancyUI) {
+      const { showLoadingAnimation } = await lazy(() => import('../src/ui/banner.js'));
+      console.log(chalk.hex(BRAND_COLORS.accent)('\n╭─────────────────────────────────────────────╮'));
+      console.log(chalk.hex(BRAND_COLORS.accent)('│') + chalk.bold.white('         📦 Finalizing Your Commit          ') + chalk.hex(BRAND_COLORS.accent)('│'));
+      console.log(chalk.hex(BRAND_COLORS.accent)('╰─────────────────────────────────────────────╯'));
+      
+      await showLoadingAnimation('Staging files and creating commit', 1200);
+    } else {
+      console.log(chalk.blue('\n📦 Staging files and creating commit...'));
+    }
     
-    await showLoadingAnimation('Staging files and creating commit', 1200);
-    
+    const { stageAllAndCommit } = await lazy(() => import('../src/utils/git.js'));
     const commitResult = await stageAllAndCommit(result.message);
     console.log(chalk.hex(BRAND_COLORS.success).bold('\n🎉 Success! ') + chalk.hex(BRAND_COLORS.success)(commitResult));
     console.log(chalk.hex(BRAND_COLORS.muted)('   Your commit has been created with style! ✨'));
@@ -259,14 +373,19 @@ async function handleCreateCommand() {
   }
 }
 
-async function handleAICommitCommand() {
+async function handleAICommitCommand(useFancyUI: boolean = false) {
   try {
-    console.log(chalk.hex(BRAND_COLORS.accent)('╭─────────────────────────────────────────────╮'));
-    console.log(chalk.hex(BRAND_COLORS.accent)('│') + chalk.bold.white('         🤖 AI Commit Assistant             ') + chalk.hex(BRAND_COLORS.accent)('│'));
-    console.log(chalk.hex(BRAND_COLORS.accent)('╰─────────────────────────────────────────────╯'));
-    console.log('');
+    const { BRAND_COLORS } = await lazy(() => import('../src/ui/banner.js'));
+    
+    if (useFancyUI) {
+      const { showLoadingAnimation } = await lazy(() => import('../src/ui/banner.js'));
+      console.log(chalk.hex(BRAND_COLORS.accent)('╭─────────────────────────────────────────────╮'));
+      console.log(chalk.hex(BRAND_COLORS.accent)('│') + chalk.bold.white('         🤖 AI Commit Assistant             ') + chalk.hex(BRAND_COLORS.accent)('│'));
+      console.log(chalk.hex(BRAND_COLORS.accent)('╰─────────────────────────────────────────────╯'));
+      console.log('');
 
-    await showLoadingAnimation('Loading AI configuration', 600);
+      await showLoadingAnimation('Loading AI configuration', 600);
+    }
 
     // Load configuration
     const config = await loadConfig();
@@ -277,9 +396,13 @@ async function handleAICommitCommand() {
       return;
     }
 
-    await showLoadingAnimation('Connecting to repository', 400);
+    if (useFancyUI) {
+      const { showLoadingAnimation } = await lazy(() => import('../src/ui/banner.js'));
+      await showLoadingAnimation('Connecting to repository', 400);
+    }
 
     // Initialize git
+    const { simpleGit } = await lazy(() => import('simple-git'));
     const git = simpleGit();
     
     // Check if we're in a git repository
@@ -291,7 +414,10 @@ async function handleAICommitCommand() {
       return;
     }
 
-    await showLoadingAnimation('Analyzing staged changes', 800);
+    if (useFancyUI) {
+      const { showLoadingAnimation } = await lazy(() => import('../src/ui/banner.js'));
+      await showLoadingAnimation('Analyzing staged changes', 800);
+    }
 
     // Get staged diff
     const diff = await git.diff(['--cached']);
@@ -307,7 +433,14 @@ async function handleAICommitCommand() {
     console.log('');
 
     // Generate AI summary
-    await showLoadingAnimation('AI is analyzing your code', 2000);
+    if (useFancyUI) {
+      const { showLoadingAnimation } = await lazy(() => import('../src/ui/banner.js'));
+      await showLoadingAnimation('AI is analyzing your code', 2000);
+    } else {
+      console.log('🤖 Analyzing your changes with AI...');
+    }
+    
+    const { generateAISummary } = await lazy(() => import('../src/utils/ai.js'));
     const { subject, body } = await generateAISummary(diff, config.ai);
 
     // Show preview
@@ -323,6 +456,7 @@ async function handleAICommitCommand() {
     console.log(chalk.cyan('└─'));
 
     // Ask for confirmation or editing
+    const { prompt } = await lazy(() => import('enquirer'));
     const action = await prompt({
       type: 'select',
       name: 'choice',
@@ -372,11 +506,13 @@ async function commitWithMessage(subject: string, body: string) {
   const fullMessage = body && body.trim() ? `${subject}\n\n${body}` : subject;
   
   console.log(chalk.blue('\n📦 Creating commit...\n'));
+  const { stageAllAndCommit } = await lazy(() => import('../src/utils/git.js'));
   const commitResult = await stageAllAndCommit(fullMessage);
   console.log(chalk.green('✅ ' + commitResult));
 }
 
 async function editAndCommit(subject: string, body: string) {
+  const { prompt } = await lazy(() => import('enquirer'));
   const editedSubject = await prompt({
     type: 'input',
     name: 'subject',
@@ -395,79 +531,104 @@ async function editAndCommit(subject: string, body: string) {
 }
 
 async function handleCheckCommand() {
-  try {
-    // Import the validation functions directly
-    const { validateCommit, parseCommitMessage, loadConfig } = await import('../scripts/check-commit.js');
-    const { execSync } = await import('child_process');
-    
-    console.log('Checking commit message...');
-    
-    // Load configuration
-    const config = await loadConfig();
-    console.log('Configuration loaded');
-    
-    // Get commit message
-    let commitMessage: string;
-    try {
-      commitMessage = execSync('git log -1 --pretty=%B', { encoding: 'utf-8' }).trim();
-    } catch (error) {
-      console.error('Error: Failed to read commit message from git');
-      console.error('Make sure you are in a git repository with at least one commit');
-      process.exit(1);
-    }
-    
-    console.log('Latest commit message:');
-    console.log(commitMessage);
-    console.log('');
-    
-    // Parse and validate commit message
-    const parsed = parseCommitMessage(commitMessage);
-    const validation = validateCommit(parsed, config);
-    
-    if (validation.valid) {
-      console.log('✓ Commit message is valid');
-      process.exit(0);
-    } else {
-      console.log('✗ Commit message validation failed:');
-      for (const error of validation.errors) {
-        console.log(`  - ${error}`);
+  console.log('Check command not yet optimized for performance mode.');
+  console.log('Use: npx tsx scripts/check-commit.ts for now.');
+  process.exit(0);
+}
+
+async function handleConfigSubmenu() {
+  const { BRAND_COLORS } = await lazy(() => import('../src/ui/banner.js'));
+  const { prompt } = await lazy(() => import('enquirer'));
+  
+  console.log(chalk.hex(BRAND_COLORS.accent).bold('⚙️  Configuration Management'));
+  console.log('');
+  
+  const response = await prompt({
+    type: 'select',
+    name: 'configAction',
+    message: 'Choose a configuration action:',
+    choices: [
+      { 
+        name: 'list', 
+        message: '📋 List current configuration',
+        hint: 'View your current settings'
+      },
+      { 
+        name: 'export', 
+        message: '📤 Export configuration',
+        hint: 'Save configuration to file or stdout'
+      },
+      { 
+        name: 'import', 
+        message: '📥 Import configuration',
+        hint: 'Load configuration from file or URL'
+      },
+      { 
+        name: 'doctor', 
+        message: '🩺 Check configuration health',
+        hint: 'Validate and diagnose configuration issues'
+      },
+      { 
+        name: 'reset', 
+        message: '🔄 Reset to defaults',
+        hint: 'Restore original configuration'
       }
-      console.log('');
-      console.log('Please fix the commit message and try again.');
-      
-      // Show helpful information
-      if (config.conventionalCommits) {
-        console.log('');
-        console.log('Conventional commit format: type(scope): subject');
-        console.log('Example: feat(auth): add user login functionality');
-        console.log('');
-        console.log('Available types:');
-        for (const type of config.commitTypes) {
-          console.log(`  ${type.type}: ${type.description}`);
-        }
-      }
-      
-      process.exit(1);
-    }
-  } catch (error) {
-    console.error('Error:', error instanceof Error ? error.message : 'Unknown error');
-    process.exit(1);
+    ]
+  });
+
+  switch ((response as { configAction: string }).configAction) {
+    case 'list':
+      const { listConfig } = await lazy(() => import('../src/cli/commands/listConfig.js'));
+      await listConfig();
+      break;
+    case 'export':
+      const { exportConfig } = await lazy(() => import('../src/cli/commands/exportConfig.js'));
+      await exportConfig();
+      break;
+    case 'import':
+      console.log(chalk.yellow('💡 To import a configuration, use: commitweave import <path-or-url>'));
+      break;
+    case 'doctor':
+      const { doctorConfig } = await lazy(() => import('../src/cli/commands/doctorConfig.js'));
+      await doctorConfig();
+      break;
+    case 'reset':
+      const { resetConfig } = await lazy(() => import('../src/cli/commands/resetConfig.js'));
+      await resetConfig();
+      break;
   }
 }
 
 function showHelp() {
   console.log(chalk.bold('\n📖 Commitweave Help\n'));
   console.log('Available commands:');
-  console.log(chalk.cyan('  commitweave') + '          Start interactive commit creation');
-  console.log(chalk.cyan('  commitweave --ai') + '      Generate AI-powered commit message');
-  console.log(chalk.cyan('  commitweave check') + '     Validate latest commit message');
-  console.log(chalk.cyan('  commitweave init') + '      Initialize configuration file');
-  console.log(chalk.cyan('  commitweave --help') + '    Show this help message');
+  
+  console.log(chalk.cyan('\n🚀 Commit Commands:'));
+  console.log(chalk.cyan('  commitweave') + '            Start interactive commit creation');
+  console.log(chalk.cyan('  commitweave --ai') + '        Generate AI-powered commit message');
+  console.log(chalk.cyan('  commitweave check') + '       Validate latest commit message');
+  
+  console.log(chalk.cyan('\n⚙️  Configuration Commands:'));
+  console.log(chalk.cyan('  commitweave list') + '        Show current configuration');
+  console.log(chalk.cyan('  commitweave export') + '      Export configuration to file/stdout');
+  console.log(chalk.cyan('    --output <file>') + '       Export to specific file');
+  console.log(chalk.cyan('    --format minimal|full') + ' Export format (default: full)');
+  console.log(chalk.cyan('  commitweave import <path>') + ' Import configuration from file/URL');
+  console.log(chalk.cyan('    --dry-run') + '            Preview changes without applying');
+  console.log(chalk.cyan('    --yes') + '                Auto-confirm import');
+  console.log(chalk.cyan('  commitweave reset') + '       Reset configuration to defaults');
+  console.log(chalk.cyan('    --force') + '              Skip confirmation prompt');
+  console.log(chalk.cyan('  commitweave doctor') + '      Validate configuration health');
+  
+  console.log(chalk.cyan('\n🛠️  Setup Commands:'));
+  console.log(chalk.cyan('  commitweave init') + '        Initialize configuration file');
+  console.log(chalk.cyan('  commitweave --help') + '      Show this help message');
+  
   console.log('\nFor more information, visit: https://github.com/GLINCKER/commitweave');
 }
 
-// Check if this file is being run directly (ESM only)
-if (typeof import.meta !== 'undefined' && typeof globalThis.process !== 'undefined' && import.meta.url === `file://${globalThis.process.argv[1]}`) {
+// Check if this file is being run directly
+if (typeof require !== 'undefined' && require.main === module) {
   main().catch(console.error);
 }
 

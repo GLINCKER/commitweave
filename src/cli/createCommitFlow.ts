@@ -1,10 +1,14 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import chalk from 'chalk';
-import enquirer from 'enquirer';
-import { CommitBuilder } from '../core/commitBuilder.js';
-import { ConfigSchema, type Config, type CommitType } from '../types/config.js';
-import { defaultConfig } from '../config/defaultConfig.js';
+import { lazy } from '../utils/lazyImport.js';
+import type { Config, CommitType } from '../types/config.js';
+
+// Lazy loaded dependencies
+let chalk: any;
+let enquirer: any;
+let CommitBuilder: any;
+let ConfigSchema: any;
+let defaultConfig: any;
 
 interface CommitFlowResult {
   message: string;
@@ -21,14 +25,19 @@ interface CommitInput {
 
 export async function createCommitFlow(): Promise<CommitFlowResult> {
   try {
-    const config = loadConfig();
+    // Load chalk for basic output
+    if (!chalk) {
+      chalk = (await lazy(() => import('chalk'))).default;
+    }
+    
+    const config = await loadConfig();
     const input = await collectUserInput(config);
     
     if (!input) {
       return { message: '', cancelled: true };
     }
 
-    const commitMessage = buildCommitMessage(config, input);
+    const commitMessage = await buildCommitMessage(config, input);
     const confirmed = await showPreviewAndConfirm(commitMessage);
     
     if (!confirmed) {
@@ -43,13 +52,26 @@ export async function createCommitFlow(): Promise<CommitFlowResult> {
   }
 }
 
-function loadConfig(): Config {
+async function loadConfig(): Promise<Config> {
+  // Lazy load config dependencies
+  if (!ConfigSchema || !defaultConfig) {
+    const [configModule, defaultConfigModule] = await Promise.all([
+      lazy(() => import('../types/config.js')),
+      lazy(() => import('../config/defaultConfig.js'))
+    ]);
+    ConfigSchema = configModule.ConfigSchema;
+    defaultConfig = defaultConfigModule.defaultConfig;
+  }
+  
   try {
     const configPath = join(process.cwd(), 'glinr-commit.json');
     const configFile = readFileSync(configPath, 'utf-8');
     const configData = JSON.parse(configFile);
     return ConfigSchema.parse(configData);
   } catch (error) {
+    if (!chalk) {
+      chalk = (await lazy(() => import('chalk'))).default;
+    }
     console.log(chalk.yellow('⚠️  Config file not found or invalid, using default configuration'));
     return defaultConfig;
   }
@@ -57,6 +79,15 @@ function loadConfig(): Config {
 
 async function collectUserInput(config: Config): Promise<CommitInput | null> {
   try {
+    // Lazy load enquirer
+    if (!enquirer) {
+      enquirer = (await lazy(() => import('enquirer'))).default;
+    }
+    
+    if (!chalk) {
+      chalk = (await lazy(() => import('chalk'))).default;
+    }
+    
     const typeChoices = config.commitTypes.map((type: CommitType) => ({
       name: `${type.emoji} ${type.type}`,
       message: `${type.emoji} ${chalk.bold(type.type)} - ${type.description}`,
@@ -115,7 +146,13 @@ async function collectUserInput(config: Config): Promise<CommitInput | null> {
   }
 }
 
-function buildCommitMessage(config: Config, input: CommitInput): string {
+async function buildCommitMessage(config: Config, input: CommitInput): Promise<string> {
+  // Lazy load CommitBuilder
+  if (!CommitBuilder) {
+    const builderModule = await lazy(() => import('../core/commitBuilder.js'));
+    CommitBuilder = builderModule.CommitBuilder;
+  }
+  
   const builder = new CommitBuilder(config);
   
   builder
@@ -135,6 +172,13 @@ function buildCommitMessage(config: Config, input: CommitInput): string {
 }
 
 async function showPreviewAndConfirm(message: string): Promise<boolean> {
+  if (!chalk) {
+    chalk = (await lazy(() => import('chalk'))).default;
+  }
+  if (!enquirer) {
+    enquirer = (await lazy(() => import('enquirer'))).default;
+  }
+  
   console.log('\n' + chalk.cyan('📋 Commit Message Preview:'));
   console.log(chalk.gray('─'.repeat(50)));
   

@@ -1,5 +1,8 @@
 import chalk from 'chalk';
 
+// Minimal spinner for performance mode
+const MINIMAL_FRAMES = ['|', '/', '-', '\\'];
+
 export const BANNER = `
  ██████╗ ██████╗ ███╗   ███╗███╗   ███╗██╗████████╗██╗    ██╗███████╗ █████╗ ██╗   ██╗███████╗
 ██╔════╝██╔═══██╗████╗ ████║████╗ ████║██║╚══██╔══╝██║    ██║██╔════╝██╔══██╗██║   ██║██╔════╝
@@ -57,7 +60,10 @@ export function getRandomTagline(): string {
 }
 
 export function printBanner(compact: boolean = false): void {
-  console.clear();
+  // Only clear console in fancy mode
+  if (process.env.CLI_FANCY === "1") {
+    console.clear();
+  }
   
   if (compact) {
     console.log(chalk.hex(BRAND_COLORS.primary).bold(COMPACT_BANNER));
@@ -86,7 +92,11 @@ export function printMiniBanner(): void {
   console.log('');
 }
 
-export async function showLoadingAnimation(message: string, duration: number = 2000): Promise<void> {
+export async function showLoadingAnimation(message: string, duration: number = 2000, minimal: boolean = false): Promise<void> {
+  if (minimal || process.env.CLI_FANCY !== "1") {
+    return showMinimalSpinner(message, duration);
+  }
+  
   return new Promise((resolve) => {
     let frameIndex = 0;
     const startTime = Date.now();
@@ -108,7 +118,36 @@ export async function showLoadingAnimation(message: string, duration: number = 2
   });
 }
 
+export async function showMinimalSpinner(message: string, duration: number = 1000): Promise<void> {
+  return new Promise((resolve) => {
+    let frameIndex = 0;
+    const startTime = Date.now();
+    
+    process.stdout.write(`${message}...`);
+    
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const frame = MINIMAL_FRAMES[frameIndex % MINIMAL_FRAMES.length];
+      
+      process.stdout.write(`\r${message}... ${frame}`);
+      frameIndex++;
+      
+      if (elapsed >= duration) {
+        clearInterval(interval);
+        process.stdout.write(`\r${message}... done\n`);
+        resolve();
+      }
+    }, 200);
+  });
+}
+
 export async function typeWriter(text: string, delay: number = 50): Promise<void> {
+  // Skip typewriter effect in performance mode
+  if (process.env.CLI_FANCY !== "1") {
+    console.log(text);
+    return;
+  }
+  
   for (let i = 0; i < text.length; i++) {
     process.stdout.write(text[i]);
     await new Promise(resolve => setTimeout(resolve, delay));
@@ -118,6 +157,11 @@ export async function typeWriter(text: string, delay: number = 50): Promise<void
 
 
 export function printFeatureHighlight(): void {
+  // Skip feature highlight in performance mode
+  if (process.env.CLI_FANCY !== "1") {
+    return;
+  }
+  
   console.log(chalk.hex(BRAND_COLORS.accent)('✨ Features:'));
   console.log('   ' + chalk.hex(BRAND_COLORS.primary)('🎯') + ' ' + chalk.white('Conventional Commits'));
   console.log('   ' + chalk.hex(BRAND_COLORS.primary)('🤖') + ' ' + chalk.white('AI-Powered Suggestions')); 

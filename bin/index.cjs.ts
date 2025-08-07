@@ -606,7 +606,7 @@ async function showHelp() {
   console.log(chalk.cyan('  commitweave check') + '     Validate latest commit message');
   console.log(chalk.cyan('  commitweave init') + '      Initialize configuration file');
   console.log(chalk.cyan('  commitweave --help') + '    Show this help message');
-  console.log('\nFor more information, visit: https://github.com/typeweaver/commitweave');
+  console.log('\nFor more information, visit: https://github.com/GLINCKER/commitweave');
 }
 
 // Check if this file is being run directly

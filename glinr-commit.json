@@ -1,87 +1,108 @@
 {
-  "$schema": "https://json.schemastore.org/package.json",
   "commitTypes": [
     {
       "type": "feat",
       "emoji": "✨",
       "description": "A new feature",
-      "aliases": ["feature", "new"]
+      "aliases": [
+        "feature",
+        "new"
+      ]
     },
     {
       "type": "fix",
       "emoji": "🐛",
       "description": "A bug fix",
-      "aliases": ["bugfix", "hotfix"]
+      "aliases": [
+        "bugfix",
+        "hotfix"
+      ]
     },
     {
       "type": "docs",
       "emoji": "📚",
       "description": "Documentation only changes",
-      "aliases": ["documentation"]
+      "aliases": [
+        "documentation"
+      ]
     },
     {
       "type": "style",
       "emoji": "💎",
       "description": "Changes that do not affect the meaning of the code",
-      "aliases": ["formatting"]
+      "aliases": [
+        "formatting"
+      ]
     },
     {
       "type": "refactor",
       "emoji": "📦",
       "description": "A code change that neither fixes a bug nor adds a feature",
-      "aliases": ["refactoring"]
+      "aliases": [
+        "refactoring"
+      ]
     },
     {
       "type": "perf",
       "emoji": "🚀",
       "description": "A code change that improves performance",
-      "aliases": ["performance", "optimization"]
+      "aliases": [
+        "performance",
+        "optimization"
+      ]
     },
     {
       "type": "test",
       "emoji": "🚨",
       "description": "Adding missing tests or correcting existing tests",
-      "aliases": ["testing"]
+      "aliases": [
+        "testing"
+      ]
     },
     {
       "type": "build",
       "emoji": "🛠",
       "description": "Changes that affect the build system or external dependencies",
-      "aliases": ["ci", "deps"]
+      "aliases": [
+        "ci",
+        "deps"
+      ]
     },
     {
       "type": "ci",
       "emoji": "⚙️",
       "description": "Changes to our CI configuration files and scripts",
-      "aliases": ["continuous-integration"]
+      "aliases": [
+        "continuous-integration"
+      ]
     },
     {
       "type": "chore",
       "emoji": "♻️",
       "description": "Other changes that don't modify src or test files",
-      "aliases": ["maintenance"]
+      "aliases": [
+        "maintenance"
+      ]
     },
     {
       "type": "revert",
       "emoji": "🗑",
       "description": "Reverts a previous commit",
-      "aliases": ["rollback"]
+      "aliases": [
+        "rollback"
+      ]
     }
   ],
   "emojiEnabled": true,
   "conventionalCommits": true,
   "aiSummary": false,
-  "maxSubjectLength": 50,
+  "maxSubjectLength": 100,
   "maxBodyLength": 72,
-  "ai": {
-    "provider": "mock",
+  "claude": {
+    "enabled": false,
     "apiKey": "",
-    "model": "",
-    "maxTokens": 150,
-    "temperature": 0.7
+    "model": "claude-3-haiku-20240307",
+    "maxTokens": 4000
   },
-  "hooks": {
-    "preCommit": [],
-    "postCommit": []
-  }
+  "version": "1.0"
 }

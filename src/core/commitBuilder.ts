@@ -122,7 +122,8 @@ export function createCommitMessage(
     conventionalCommits: true, 
     aiSummary: false, 
     maxSubjectLength: 50, 
-    maxBodyLength: 72 
+    maxBodyLength: 72,
+    version: "1.0"
   });
   
   builder.setType(type).setSubject(subject);

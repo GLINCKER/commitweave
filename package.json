@@ -1,6 +1,6 @@
 {
   "name": "@typeweaver/commitweave",
-  "version": "0.1.0-beta.4",
+  "version": "0.1.0-beta.5",
   "description": "A modern CLI to write smart, structured, and beautiful git commit messages with emoji support, conventional commit rules, AI-powered summaries (optional), and built-in hooks.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -28,11 +28,14 @@
     "clean": "rm -rf dist",
     "build:post": "npm run build:prepare-dist",
     "build:prepare-dist": "node scripts/prepare-dist.js",
+    "bench": "npm run build && tsx scripts/bench.ts",
     "check": "tsx scripts/check-commit.ts",
     "dev": "tsx watch bin/index.ts",
     "prepublishOnly": "npm run build",
     "start": "node ./dist/bin.js",
-    "test": "npx tsx scripts/test-local.ts && npx tsx scripts/test-cli-functions.ts"
+    "test": "npx tsx scripts/test-local.ts && npx tsx scripts/test-cli-functions.ts && npx tsx tests/anthropic.spec.ts && npx tsx tests/config.spec.ts",
+    "test:perf": "tsx tests/perf.spec.ts",
+    "setup:branding": "node scripts/setup-branding.js"
   },
   "keywords": [
     "git",
