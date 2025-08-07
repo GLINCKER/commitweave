@@ -9,6 +9,9 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required to create releases and upload assets
+      packages: read   # Required to read packages
     
     steps:
       - name: Checkout code
@@ -52,30 +55,27 @@ jobs:
           cd vscode-extension
           npx vsce publish --no-yarn -p ${{ secrets.GLINCKER_VSCE_TOKEN }}
 
-      - name: Create GitHub Release
+      - name: Create GitHub Release with VSIX
         if: startsWith(github.ref, 'refs/tags/vscode-v')
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          release_name: VS Code Extension ${{ github.ref_name }}
+          name: "CommitWeave VS Code Extension ${{ github.ref_name }}"
+          body: |
+            ## CommitWeave VS Code Extension Release ${{ github.ref_name }}
+            
+            ### Features
+            - **CommitWeave: Create Commit** - Interactive CLI integration
+            - **CommitWeave: AI Commit** - AI-powered commit generation  
+            - **CommitWeave: Configure** - Settings webview panel
+            
+            ### Installation
+            1. Download the `.vsix` file from this release
+            2. In VS Code: `View` → `Command Palette` → `Extensions: Install from VSIX...`
+            3. Select the downloaded file
+            
+            Or install from the VS Code Marketplace: Search for "CommitWeave"
+          files: vscode-extension/*.vsix
           draft: false
           prerelease: false
-
-      - name: Get VSIX filename
-        if: startsWith(github.ref, 'refs/tags/vscode-v')
-        id: vsix_filename
-        run: echo "filename=$(ls vscode-extension/*.vsix)" >> $GITHUB_OUTPUT
-
-      - name: Upload VSIX to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/vscode-v')
-        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.vsix_filename.outputs.filename }}
-          asset_name: commitweave-vscode-extension.vsix
-          asset_content_type: application/zip
