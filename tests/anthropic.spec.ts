@@ -62,7 +62,7 @@ async function assertRejects(promise: Promise<any>, errorType?: any, message?: s
     await promise;
     throw new Error(`❌ Expected promise to reject${message ? `: ${message}` : ''}`);
   } catch (error) {
-    if (errorType && !(error instanceof errorType)) {
+    if (errorType && error.constructor.name !== errorType.name) {
       throw new Error(
         `❌ Expected error of type ${errorType.name}, got ${error.constructor.name}${message ? `: ${message}` : ''}`
       );
