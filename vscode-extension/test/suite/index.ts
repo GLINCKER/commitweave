@@ -1,6 +1,8 @@
 import * as path from 'path';
-import * as Mocha from 'mocha';
 import { glob } from 'glob';
+
+// Import Mocha class directly
+const Mocha = require('mocha');
 
 export function run(): Promise<void> {
   // Create the mocha test
@@ -19,7 +21,7 @@ export function run(): Promise<void> {
       files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)));
 
       // Run the mocha test
-      mocha.run(failures => {
+      mocha.run((failures: number) => {
         if (failures > 0) {
           e(new Error(`${failures} tests failed.`));
         } else {

@@ -1,5 +1,7 @@
 import * as path from 'path';
-import { runTests } from '@vscode/test-electron';
+
+// Use require for @vscode/test-electron to avoid TypeScript module resolution issues
+const { runTests } = require('@vscode/test-electron');
 
 async function main() {
   try {
