@@ -96,6 +96,13 @@
   "emojiEnabled": true,
   "conventionalCommits": true,
   "aiSummary": false,
+  "ui": {
+    "fancyUI": true,
+    "asciiArt": true,
+    "animations": true,
+    "colors": true,
+    "emoji": true
+  },
   "maxSubjectLength": 100,
   "maxBodyLength": 72,
   "claude": {

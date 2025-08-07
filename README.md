@@ -103,6 +103,7 @@ commitweave --ai
 - 🔧 **Git Integration** - stage and commit seamlessly
 - 📦 **TypeScript First** with full IntelliSense
 - 🛡️ **Cross-Platform** (Windows, macOS, Linux)
+- ⚡ **Command Shortcuts** for power users
 
 </td>
 <td valign="top" width="50%">
@@ -111,10 +112,12 @@ commitweave --ai
 - 🤖 **AI Commit Generation** (OpenAI & Claude)
 - 🧩 **VS Code Extension** with native integration
 - 📋 **Team Config Sharing** via export/import
-- ✅ **Message Validation** with helpful suggestions
-- 📊 **Commit Analytics** and history visualization
+- ✅ **Message Validation** with actionable solutions
+- 📊 **Diff Analysis** with smart statistics
+- 🎯 **Progress Indicators** for all operations
 - 🔄 **Version Control** for configurations
 - 🏥 **Health Monitoring** with doctor command
+- 🎨 **UI Configuration** - customize all visual elements
 
 </td>
 </tr>
@@ -127,9 +130,18 @@ commitweave --ai
 | Command | Description | Example |
 |---------|-------------|---------|
 | `commitweave` | Interactive commit creation | Creates commits with guided prompts |
-| `commitweave --ai` | AI-powered commit generation | Analyzes changes, suggests commits |
+| `commitweave ai` | AI-powered commit generation | Analyzes changes, suggests commits |
 | `commitweave init` | Initialize project configuration | Sets up `glinr-commit.json` |
 | `commitweave check` | Validate your last commit | Checks conventional commit compliance |
+
+### ⚡ Command Shortcuts (Power Users)
+
+| Shortcut | Full Command | Description |
+|----------|-------------|-------------|
+| `commitweave v` | `commitweave check` | Quick validate last commit |
+| `commitweave ls` | `commitweave list` | Quick list configuration |  
+| `commitweave ai` | `commitweave --ai` | Direct AI commit (no flag) |
+| `commitweave health` | `commitweave doctor` | Quick health check |
 
 ### Configuration Management
 
@@ -179,6 +191,13 @@ commitweave --ai
   "ai": {
     "provider": "openai",
     "model": "gpt-4"
+  },
+  "ui": {
+    "fancyUI": true,
+    "asciiArt": true,
+    "animations": true,
+    "colors": true,
+    "emoji": true
   }
 }
 ```

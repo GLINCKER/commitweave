@@ -53,12 +53,16 @@ Respond with JSON in this format:
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
+          Authorization: `Bearer ${this.apiKey}`
         },
         body: JSON.stringify({
           model,
           messages: [
-            { role: 'system', content: 'You are a helpful assistant that generates conventional git commit messages.' },
+            {
+              role: 'system',
+              content:
+                'You are a helpful assistant that generates conventional git commit messages.'
+            },
             { role: 'user', content: prompt }
           ],
           temperature,
@@ -71,15 +75,15 @@ Respond with JSON in this format:
         throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
       }
 
-      const data = await response.json() as any;
+      const data = (await response.json()) as any;
       const content = data.choices?.[0]?.message?.content;
-      
+
       if (!content) {
         throw new Error('No response from OpenAI API');
       }
 
       const parsed = JSON.parse(content);
-      
+
       return {
         type: parsed.type || 'feat',
         scope: parsed.scope,

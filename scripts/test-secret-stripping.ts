@@ -111,14 +111,20 @@ const testCases: TestCase[] = [
     expected: {
       shouldRedact: ['API_KEY', 'apikey', 'ApiKey', 'SECRET', 'Token'],
       shouldPreserve: [],
-      shouldNotContain: ['uppercase-key', 'lowercase-key', 'camelcase-key', 'uppercase-secret', 'title-case-token']
+      shouldNotContain: [
+        'uppercase-key',
+        'lowercase-key',
+        'camelcase-key',
+        'uppercase-secret',
+        'title-case-token'
+      ]
     }
   }
 ];
 
 async function testSecretStripping() {
   console.log(chalk.blue('🔒 Testing Secret Stripping Functionality'));
-  console.log(chalk.gray('=' .repeat(60)));
+  console.log(chalk.gray('='.repeat(60)));
   console.log('');
 
   let passed = 0;
@@ -141,14 +147,14 @@ async function testSecretStripping() {
   for (const testCase of testCases) {
     console.log(chalk.cyan(`Testing: ${testCase.name}`));
     console.log(chalk.gray('─'.repeat(40)));
-    
+
     try {
       const stripped = stripSecrets(testCase.input);
       const strippedJson = JSON.stringify(stripped, null, 2);
-      
+
       let testPassed = true;
       const errors: string[] = [];
-      
+
       // Check redacted fields
       for (const path of testCase.expected.shouldRedact) {
         const value = getNestedValue(stripped, path);
@@ -157,17 +163,19 @@ async function testSecretStripping() {
           testPassed = false;
         }
       }
-      
+
       // Check preserved fields
       for (const path of testCase.expected.shouldPreserve) {
         const originalValue = getNestedValue(testCase.input, path);
         const strippedValue = getNestedValue(stripped, path);
         if (originalValue !== strippedValue) {
-          errors.push(`Field ${path} should be preserved but changed from ${originalValue} to ${strippedValue}`);
+          errors.push(
+            `Field ${path} should be preserved but changed from ${originalValue} to ${strippedValue}`
+          );
           testPassed = false;
         }
       }
-      
+
       // Check that sensitive values are not in output
       for (const sensitiveValue of testCase.expected.shouldNotContain) {
         if (strippedJson.includes(sensitiveValue)) {
@@ -175,7 +183,7 @@ async function testSecretStripping() {
           testPassed = false;
         }
       }
-      
+
       if (testPassed) {
         console.log(chalk.green('✅ PASS'));
         passed++;
@@ -186,20 +194,19 @@ async function testSecretStripping() {
         });
         failed++;
       }
-      
     } catch (error) {
       console.log(chalk.red('❌ ERROR'));
       console.log(chalk.red(`   ${error instanceof Error ? error.message : 'Unknown error'}`));
       failed++;
     }
-    
+
     console.log('');
   }
 
   // Test real configuration with secrets
   console.log(chalk.cyan('Testing: Real configuration with secrets'));
   console.log(chalk.gray('─'.repeat(40)));
-  
+
   try {
     const configWithSecrets = {
       ...defaultConfig,
@@ -217,33 +224,33 @@ async function testSecretStripping() {
         maxTokens: 4000
       }
     };
-    
+
     const stripped = stripSecrets(configWithSecrets);
     const strippedJson = JSON.stringify(stripped, null, 2);
-    
+
     // Verify all sensitive data is redacted
     const sensitiveValues = ['sk-proj-abcdef1234567890', 'claude-key-xyz789'];
     let realConfigPassed = true;
-    
+
     for (const sensitive of sensitiveValues) {
       if (strippedJson.includes(sensitive)) {
         console.log(chalk.red(`❌ Sensitive value "${sensitive}" found in stripped output`));
         realConfigPassed = false;
       }
     }
-    
+
     // Verify redaction markers are present
     if (!strippedJson.includes('***REDACTED***')) {
       console.log(chalk.red('❌ No redaction markers found'));
       realConfigPassed = false;
     }
-    
+
     // Verify non-sensitive data is preserved
     if (!stripped.commitTypes || stripped.commitTypes.length === 0) {
       console.log(chalk.red('❌ Commit types were not preserved'));
       realConfigPassed = false;
     }
-    
+
     if (realConfigPassed) {
       console.log(chalk.green('✅ PASS - Real configuration properly redacted'));
       passed++;
@@ -251,19 +258,18 @@ async function testSecretStripping() {
       console.log(chalk.red('❌ FAIL - Real configuration redaction failed'));
       failed++;
     }
-    
   } catch (error) {
     console.log(chalk.red('❌ ERROR - Real configuration test failed'));
     console.log(chalk.red(`   ${error instanceof Error ? error.message : 'Unknown error'}`));
     failed++;
   }
-  
+
   console.log('');
 
   // Test minimal config creation (should exclude secrets entirely)
   console.log(chalk.cyan('Testing: Minimal config creation'));
   console.log(chalk.gray('─'.repeat(40)));
-  
+
   try {
     const configWithSecrets = {
       ...defaultConfig,
@@ -273,24 +279,24 @@ async function testSecretStripping() {
         model: 'gpt-4'
       }
     };
-    
+
     const minimal = createMinimalConfig(configWithSecrets);
     const minimalJson = JSON.stringify(minimal, null, 2);
-    
+
     let minimalPassed = true;
-    
+
     // Should not contain any secrets
     if (minimalJson.includes('sk-test-123')) {
       console.log(chalk.red('❌ Minimal config contains secrets'));
       minimalPassed = false;
     }
-    
+
     // Should not contain AI config at all
     if (minimal.ai !== undefined || minimalJson.includes('"ai"')) {
       console.log(chalk.red('❌ Minimal config contains AI configuration'));
       minimalPassed = false;
     }
-    
+
     // Should contain essential fields
     const essentialFields = ['version', 'commitTypes', 'emojiEnabled', 'conventionalCommits'];
     for (const field of essentialFields) {
@@ -299,7 +305,7 @@ async function testSecretStripping() {
         minimalPassed = false;
       }
     }
-    
+
     if (minimalPassed) {
       console.log(chalk.green('✅ PASS - Minimal config properly excludes secrets'));
       passed++;
@@ -307,21 +313,20 @@ async function testSecretStripping() {
       console.log(chalk.red('❌ FAIL - Minimal config creation failed'));
       failed++;
     }
-    
   } catch (error) {
     console.log(chalk.red('❌ ERROR - Minimal config test failed'));
     console.log(chalk.red(`   ${error instanceof Error ? error.message : 'Unknown error'}`));
     failed++;
   }
-  
+
   console.log('');
-  
+
   // Summary
-  console.log(chalk.gray('=' .repeat(60)));
+  console.log(chalk.gray('='.repeat(60)));
   console.log(chalk.green(`✅ Passed: ${passed}`));
   console.log(chalk.red(`❌ Failed: ${failed}`));
   console.log(chalk.blue(`📊 Total: ${passed + failed}`));
-  
+
   if (failed === 0) {
     console.log(chalk.green('\n🔒 All secret stripping tests passed!'));
     console.log(chalk.gray('   Sensitive data is properly redacted during export'));

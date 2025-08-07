@@ -13,15 +13,15 @@ export interface DiffItem {
  */
 export function stripSecrets<T extends Record<string, any>>(config: T): T {
   const stripped = JSON.parse(JSON.stringify(config)); // Deep clone
-  
+
   function stripRecursive(obj: any, path: string = ''): void {
     if (typeof obj !== 'object' || obj === null) {
       return;
     }
-    
+
     for (const [key, value] of Object.entries(obj)) {
       const fullPath = path ? `${path}.${key}` : key;
-      
+
       // Check if key matches secret pattern
       if (/key|token|secret|password/i.test(key)) {
         if (typeof value === 'string' && value.length > 0) {
@@ -33,7 +33,7 @@ export function stripSecrets<T extends Record<string, any>>(config: T): T {
       }
     }
   }
-  
+
   stripRecursive(stripped);
   return stripped;
 }
@@ -57,22 +57,15 @@ export function createMinimalConfig(config: Config): Partial<Config> {
  */
 export function createDiff(oldConfig: Config, newConfig: Config): DiffItem[] {
   const diff: DiffItem[] = [];
-  
-  function compareObjects(
-    oldObj: any,
-    newObj: any,
-    path: string = ''
-  ): void {
-    const allKeys = new Set([
-      ...Object.keys(oldObj || {}),
-      ...Object.keys(newObj || {})
-    ]);
-    
+
+  function compareObjects(oldObj: any, newObj: any, path: string = ''): void {
+    const allKeys = new Set([...Object.keys(oldObj || {}), ...Object.keys(newObj || {})]);
+
     for (const key of allKeys) {
       const fullPath = path ? `${path}.${key}` : key;
       const oldValue = oldObj?.[key];
       const newValue = newObj?.[key];
-      
+
       if (oldValue === undefined && newValue !== undefined) {
         // Added
         diff.push({
@@ -113,7 +106,7 @@ export function createDiff(oldConfig: Config, newConfig: Config): DiffItem[] {
       }
     }
   }
-  
+
   compareObjects(oldConfig, newConfig);
   return diff;
 }
@@ -129,7 +122,7 @@ export function formatDiffItem(item: DiffItem): string {
     if (typeof value === 'object') return JSON.stringify(value, null, 2);
     return String(value);
   };
-  
+
   switch (item.type) {
     case 'added':
       return `+ ${item.path}: ${formatValue(item.new)}`;
@@ -160,14 +153,14 @@ export function validateConfigVersion(config: any): { valid: boolean; message: s
       message: 'Configuration is missing version field. This config may be incompatible.'
     };
   }
-  
+
   if (config.version !== '1.0') {
     return {
       valid: false,
       message: `Configuration version "${config.version}" is not supported. Expected version "1.0".`
     };
   }
-  
+
   return {
     valid: true,
     message: 'Configuration version is compatible.'
@@ -189,10 +182,10 @@ export function getDiffSummary(diff: DiffItem[]): {
     removed: 0,
     total: diff.length
   };
-  
+
   for (const item of diff) {
     summary[item.type]++;
   }
-  
+
   return summary;
 }

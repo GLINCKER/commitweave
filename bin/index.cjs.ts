@@ -23,7 +23,7 @@ async function loadConfig() {
       ConfigSchema = configModule.ConfigSchema;
       defaultConfig = defaultConfigModule.defaultConfig;
     }
-    
+
     const configPath = join(process.cwd(), 'glinr-commit.json');
     const configFile = await readFile(configPath, 'utf-8');
     const configData = JSON.parse(configFile);
@@ -36,18 +36,23 @@ async function loadConfig() {
 async function main() {
   const args = process.argv.slice(2);
   const aiFlag = args.includes('--ai');
-  const isInteractiveMode = !aiFlag && !args.includes('init') && !args.includes('check') && !args.includes('--help') && !args.includes('-h');
-  
+  const isInteractiveMode =
+    !aiFlag &&
+    !args.includes('init') &&
+    !args.includes('check') &&
+    !args.includes('--help') &&
+    !args.includes('-h');
+
   // Load dynamic dependencies
   if (!chalk) {
     chalk = await import('chalk');
     chalk = chalk.default;
   }
-  
+
   if (!bannerModule) {
     bannerModule = require('../dist/lib/ui/banner.js');
   }
-  
+
   // Show beautiful banner for interactive mode
   if (isInteractiveMode) {
     bannerModule.printBanner();
@@ -87,34 +92,34 @@ async function main() {
     // Default interactive mode with enhanced UI
     console.log(chalk.cyan.bold('🚀 What would you like to do today?'));
     console.log('');
-    
+
     const response = await prompt({
       type: 'select',
       name: 'action',
       message: 'Choose an action:',
       choices: [
-        { 
-          name: 'create', 
+        {
+          name: 'create',
           message: '📝 Create a new commit',
           hint: 'Interactive commit message builder'
         },
-        { 
-          name: 'ai', 
+        {
+          name: 'ai',
           message: '🤖 AI-powered commit',
           hint: 'Let AI analyze your changes and suggest a commit message'
         },
-        { 
-          name: 'init', 
+        {
+          name: 'init',
           message: '⚙️  Setup configuration',
           hint: 'Initialize or update commitweave settings'
         },
-        { 
-          name: 'check', 
+        {
+          name: 'check',
           message: '🔍 Validate commit',
           hint: 'Check if your latest commit follows conventions'
         },
-        { 
-          name: 'help', 
+        {
+          name: 'help',
           message: '❓ Show help',
           hint: 'View all available commands and options'
         }
@@ -155,10 +160,10 @@ async function handleInitCommand() {
     chalk = await import('chalk');
     chalk = chalk.default;
   }
-  
+
   try {
     const configPath = join(process.cwd(), 'glinr-commit.json');
-    
+
     // Check if file already exists
     let fileExists = false;
     try {
@@ -167,59 +172,64 @@ async function handleInitCommand() {
     } catch {
       // File doesn't exist, which is fine
     }
-    
+
     if (fileExists) {
       console.log(chalk.yellow('⚠️  Configuration file already exists!'));
-      
-      const { overwrite } = await prompt({
+
+      const { overwrite } = (await prompt({
         type: 'confirm',
         name: 'overwrite',
         message: 'Do you want to overwrite the existing glinr-commit.json?',
         initial: false
-      }) as { overwrite: boolean };
-      
+      })) as { overwrite: boolean };
+
       if (!overwrite) {
         console.log(chalk.gray('Configuration initialization cancelled.'));
         return;
       }
     }
-    
+
     // Basic configuration structure
     const basicConfig = {
       commitTypes: [
-        { type: "feat", emoji: "✨", description: "New feature" },
-        { type: "fix", emoji: "🐛", description: "Bug fix" },
-        { type: "docs", emoji: "📚", description: "Documentation changes" },
-        { type: "style", emoji: "💎", description: "Code style changes" },
-        { type: "refactor", emoji: "📦", description: "Code refactoring" },
-        { type: "test", emoji: "🚨", description: "Testing" },
-        { type: "chore", emoji: "♻️", description: "Maintenance tasks" }
+        { type: 'feat', emoji: '✨', description: 'New feature' },
+        { type: 'fix', emoji: '🐛', description: 'Bug fix' },
+        { type: 'docs', emoji: '📚', description: 'Documentation changes' },
+        { type: 'style', emoji: '💎', description: 'Code style changes' },
+        { type: 'refactor', emoji: '📦', description: 'Code refactoring' },
+        { type: 'test', emoji: '🚨', description: 'Testing' },
+        { type: 'chore', emoji: '♻️', description: 'Maintenance tasks' }
       ],
       emojiEnabled: true,
       conventionalCommits: true,
       maxSubjectLength: 50,
       maxBodyLength: 72
     };
-    
+
     console.log(chalk.blue('📝 Creating configuration file...'));
-    
+
     await writeFile(configPath, JSON.stringify(basicConfig, null, 2), 'utf-8');
-    
+
     console.log(chalk.green('✅ Configuration file created successfully!'));
     console.log(chalk.gray(`   Location: ${configPath}`));
     console.log(chalk.cyan('\n🚀 Next steps:'));
-    console.log(chalk.white('   • Run') + chalk.cyan(' commitweave ') + chalk.white('to start committing!'));
-    console.log(chalk.white('   • Edit') + chalk.cyan(' glinr-commit.json ') + chalk.white('to customize your settings'));
-    
+    console.log(
+      chalk.white('   • Run') + chalk.cyan(' commitweave ') + chalk.white('to start committing!')
+    );
+    console.log(
+      chalk.white('   • Edit') +
+        chalk.cyan(' glinr-commit.json ') +
+        chalk.white('to customize your settings')
+    );
   } catch (error) {
     console.error(chalk.red('❌ Failed to create configuration file:'));
-    
+
     if (error instanceof Error) {
       console.error(chalk.red('   ' + error.message));
     } else {
       console.error(chalk.red('   Unknown error occurred'));
     }
-    
+
     process.exit(1);
   }
 }
@@ -241,23 +251,22 @@ async function handleCreateCommand() {
 
   try {
     const result = await createCommitFlow();
-    
+
     if (result.cancelled) {
       console.log(chalk.yellow('✨ Commit creation cancelled'));
       return;
     }
-    
+
     console.log(chalk.blue('\n📦 Staging files and creating commit...\n'));
-    
+
     const commitResult = await stageAllAndCommit(result.message);
     console.log(chalk.green('✅ ' + commitResult));
-    
   } catch (error) {
     console.error(chalk.red('❌ Failed to create commit:'));
-    
+
     if (error instanceof Error) {
       console.error(chalk.red('   ' + error.message));
-      
+
       if (error.message.includes('Not a git repository')) {
         console.log(chalk.yellow('\n💡 Tip: Initialize a git repository with "git init"'));
       } else if (error.message.includes('No staged changes')) {
@@ -266,7 +275,7 @@ async function handleCreateCommand() {
     } else {
       console.error(chalk.red('   Unknown error occurred'));
     }
-    
+
     process.exit(1);
   }
 }
@@ -274,7 +283,11 @@ async function handleCreateCommand() {
 async function handleAICommitCommand() {
   try {
     console.log(chalk.magenta('╭─────────────────────────────────────────────╮'));
-    console.log(chalk.magenta('│') + chalk.bold.white('         🤖 AI Commit Assistant             ') + chalk.magenta('│'));
+    console.log(
+      chalk.magenta('│') +
+        chalk.bold.white('         🤖 AI Commit Assistant             ') +
+        chalk.magenta('│')
+    );
     console.log(chalk.magenta('╰─────────────────────────────────────────────╯'));
     console.log('');
 
@@ -284,8 +297,10 @@ async function handleAICommitCommand() {
     const config = await loadConfig();
     if (!config.ai) {
       console.log(chalk.yellow('⚠️  AI configuration not found'));
-      console.log(chalk.gray('   Let\'s set that up for you!'));
-      console.log(chalk.cyan('   Run: ') + chalk.white('commitweave init') + chalk.gray(' to configure AI'));
+      console.log(chalk.gray("   Let's set that up for you!"));
+      console.log(
+        chalk.cyan('   Run: ') + chalk.white('commitweave init') + chalk.gray(' to configure AI')
+      );
       return;
     }
 
@@ -303,7 +318,7 @@ async function handleAICommitCommand() {
 
     // Initialize git
     const git = simpleGit();
-    
+
     // Check if we're in a git repository
     const isRepo = await git.checkIsRepo();
     if (!isRepo) {
@@ -317,11 +332,16 @@ async function handleAICommitCommand() {
 
     // Get staged diff
     const diff = await git.diff(['--cached']);
-    
+
     if (!diff || diff.trim().length === 0) {
       console.error(chalk.red('❌ No staged changes found'));
       console.log(chalk.yellow('💡 Pro tip: Stage some changes first'));
-      console.log(chalk.gray('   Run: ') + chalk.cyan('git add .') + chalk.gray(' or ') + chalk.cyan('git add <file>'));
+      console.log(
+        chalk.gray('   Run: ') +
+          chalk.cyan('git add .') +
+          chalk.gray(' or ') +
+          chalk.cyan('git add <file>')
+      );
       return;
     }
 
@@ -345,7 +365,7 @@ async function handleAICommitCommand() {
     console.log(chalk.cyan('└─'));
 
     // Ask for confirmation or editing
-    const action = await prompt({
+    const action = (await prompt({
       type: 'select',
       name: 'choice',
       message: 'What would you like to do with this AI-generated message?',
@@ -355,7 +375,7 @@ async function handleAICommitCommand() {
         { name: 'regenerate', message: '🔄 Generate a new message' },
         { name: 'cancel', message: '❌ Cancel' }
       ]
-    }) as { choice: string };
+    })) as { choice: string };
 
     switch (action.choice) {
       case 'commit':
@@ -372,46 +392,45 @@ async function handleAICommitCommand() {
         console.log(chalk.yellow('✨ AI commit cancelled'));
         break;
     }
-
   } catch (error) {
     console.error(chalk.red('❌ Failed to create AI commit:'));
-    
+
     if (error instanceof Error) {
       console.error(chalk.red('   ' + error.message));
-      
+
       if (error.message.includes('API key')) {
         console.log(chalk.yellow('\n💡 Tip: Configure your AI API key in glinr-commit.json'));
       }
     } else {
       console.error(chalk.red('   Unknown error occurred'));
     }
-    
+
     process.exit(1);
   }
 }
 
 async function commitWithMessage(subject: string, body: string) {
   const fullMessage = body && body.trim() ? `${subject}\n\n${body}` : subject;
-  
+
   console.log(chalk.blue('\n📦 Creating commit...\n'));
   const commitResult = await stageAllAndCommit(fullMessage);
   console.log(chalk.green('✅ ' + commitResult));
 }
 
 async function editAndCommit(subject: string, body: string) {
-  const editedSubject = await prompt({
+  const editedSubject = (await prompt({
     type: 'input',
     name: 'subject',
     message: 'Edit commit subject:',
     initial: subject
-  }) as { subject: string };
+  })) as { subject: string };
 
-  const editedBody = await prompt({
+  const editedBody = (await prompt({
     type: 'input',
     name: 'body',
     message: 'Edit commit body (optional):',
     initial: body || ''
-  }) as { body: string };
+  })) as { body: string };
 
   await commitWithMessage(editedSubject.subject, editedBody.body);
 }
@@ -420,13 +439,13 @@ async function handleCheckCommand() {
   try {
     // Load dependencies
     const { execSync } = require('child_process');
-    
+
     console.log('Checking commit message...');
-    
+
     // Load configuration
     const config = await loadConfig();
     console.log('Configuration loaded');
-    
+
     // Get commit message
     let commitMessage: string;
     try {
@@ -436,20 +455,20 @@ async function handleCheckCommand() {
       console.error('Make sure you are in a git repository with at least one commit');
       process.exit(1);
     }
-    
+
     console.log('Latest commit message:');
     console.log(commitMessage);
     console.log('');
-    
+
     // Check if this is a special commit that should be excluded from validation
     if (isSpecialCommit(commitMessage)) {
       console.log('✓ Special commit detected (merge/revert/fixup) - skipping validation');
       process.exit(0);
     }
-    
+
     // Use inline validation logic for CommonJS compatibility
     const validation = validateCommitMessage(commitMessage, config);
-    
+
     if (validation.valid) {
       console.log('✓ Commit message is valid');
       process.exit(0);
@@ -460,7 +479,7 @@ async function handleCheckCommand() {
       }
       console.log('');
       console.log('Please fix the commit message and try again.');
-      
+
       // Show helpful information
       if (config.conventionalCommits) {
         console.log('');
@@ -472,7 +491,7 @@ async function handleCheckCommand() {
           console.log(`  ${type.type}: ${type.description}`);
         }
       }
-      
+
       process.exit(1);
     }
   } catch (error) {
@@ -483,42 +502,42 @@ async function handleCheckCommand() {
 
 function isSpecialCommit(message: string): boolean {
   const header = message.split('\n')[0] || '';
-  
+
   // Check for merge commits
   if (header.startsWith('Merge ')) {
     return true;
   }
-  
+
   // Check for revert commits
   if (header.startsWith('Revert ')) {
     return true;
   }
-  
+
   // Check for fixup commits
   if (header.startsWith('fixup! ') || header.startsWith('squash! ')) {
     return true;
   }
-  
+
   // Check for initial commits
   if (header.toLowerCase().includes('initial commit')) {
     return true;
   }
-  
+
   return false;
 }
 
 function parseCommitMessage(message: string) {
   const lines = message.split('\n');
   const header = lines[0] || '';
-  
+
   // Match conventional commit format: type(scope)!: subject
   const conventionalPattern = /^(\w+)(\([^)]+\))?(!)?\s*:\s*(.+)$/;
   const match = header.match(conventionalPattern);
-  
+
   if (match) {
     const [, type, scopeWithParens, breaking, subject] = match;
     const scope = scopeWithParens ? scopeWithParens.slice(1, -1) : undefined;
-    
+
     return {
       type,
       scope,
@@ -528,7 +547,7 @@ function parseCommitMessage(message: string) {
       footer: undefined
     };
   }
-  
+
   // If not conventional format, treat entire header as subject
   return {
     subject: header.trim(),
@@ -539,7 +558,7 @@ function parseCommitMessage(message: string) {
 function validateCommitMessage(message: string, config: any) {
   const errors: string[] = [];
   const parsed = parseCommitMessage(message);
-  
+
   // Check if conventional commits are required
   if (config.conventionalCommits) {
     if (!parsed.type) {
@@ -554,27 +573,33 @@ function validateCommitMessage(message: string, config: any) {
       }
     }
   }
-  
+
   // Check subject requirements
   if (!parsed.subject || parsed.subject.length === 0) {
     errors.push('Commit subject is required');
   } else {
     // Check subject length
     if (parsed.subject.length > config.maxSubjectLength) {
-      errors.push(`Subject too long: ${parsed.subject.length} characters (max: ${config.maxSubjectLength})`);
+      errors.push(
+        `Subject too long: ${parsed.subject.length} characters (max: ${config.maxSubjectLength})`
+      );
     }
-    
+
     // Check subject format (should not end with period)
     if (parsed.subject.endsWith('.')) {
       errors.push('Subject should not end with a period');
     }
-    
+
     // Check subject case (should start with lowercase unless it's a proper noun)
-    if (config.conventionalCommits && parsed.subject && parsed.subject[0] !== parsed.subject[0].toLowerCase()) {
+    if (
+      config.conventionalCommits &&
+      parsed.subject &&
+      parsed.subject[0] !== parsed.subject[0].toLowerCase()
+    ) {
       errors.push('Subject should start with lowercase letter');
     }
   }
-  
+
   // Check body length if present
   if (parsed.body && config.maxBodyLength) {
     const bodyLines = parsed.body.split('\n');
@@ -585,7 +610,7 @@ function validateCommitMessage(message: string, config: any) {
       }
     }
   }
-  
+
   return {
     valid: errors.length === 0,
     errors
@@ -598,7 +623,7 @@ async function showHelp() {
     chalk = await import('chalk');
     chalk = chalk.default;
   }
-  
+
   console.log(chalk.bold('\n📖 Commitweave Help\n'));
   console.log('Available commands:');
   console.log(chalk.cyan('  commitweave') + '          Start interactive commit creation');

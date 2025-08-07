@@ -44,7 +44,7 @@ class CrossPlatformTester {
     const platform = os.platform();
     const release = os.release();
     const arch = os.arch();
-    
+
     switch (platform) {
       case 'win32':
         return `Windows ${release} (${arch})`;
@@ -62,13 +62,18 @@ class CrossPlatformTester {
     return path.basename(shell);
   }
 
-  private async runTest(name: string, command: string, args: string[] = [], timeout = 10000): Promise<TestResult> {
+  private async runTest(
+    name: string,
+    command: string,
+    args: string[] = [],
+    timeout = 10000
+  ): Promise<TestResult> {
     const startTime = Date.now();
-    
+
     try {
       const result = await this.executeCommand(command, args, timeout);
       const duration = Date.now() - startTime;
-      
+
       return {
         name,
         success: true,
@@ -87,7 +92,11 @@ class CrossPlatformTester {
     }
   }
 
-  private executeCommand(command: string, args: string[], timeout: number): Promise<{ stdout: string; stderr: string }> {
+  private executeCommand(
+    command: string,
+    args: string[],
+    timeout: number
+  ): Promise<{ stdout: string; stderr: string }> {
     return new Promise((resolve, reject) => {
       const child = spawn(command, args, {
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -97,15 +106,15 @@ class CrossPlatformTester {
       let stdout = '';
       let stderr = '';
 
-      child.stdout?.on('data', (data) => {
+      child.stdout?.on('data', data => {
         stdout += data.toString();
       });
 
-      child.stderr?.on('data', (data) => {
+      child.stderr?.on('data', data => {
         stderr += data.toString();
       });
 
-      child.on('close', (code) => {
+      child.on('close', code => {
         if (code === 0) {
           resolve({ stdout, stderr });
         } else {
@@ -116,7 +125,7 @@ class CrossPlatformTester {
         }
       });
 
-      child.on('error', (error) => {
+      child.on('error', error => {
         (error as any).stdout = stdout;
         (error as any).stderr = stderr;
         reject(error);
@@ -195,7 +204,7 @@ class CrossPlatformTester {
       process.stdout.write(`Testing: ${test.name}... `);
       const result = await this.runTest(test.name, test.command, test.args);
       this.results.results.push(result);
-      
+
       if (result.success) {
         console.log(`✅ (${result.duration}ms)`);
       } else {
@@ -212,13 +221,13 @@ class CrossPlatformTester {
     const total = this.results.results.length;
     const passed = this.results.results.filter(r => r.success).length;
     const failed = total - passed;
-    
+
     console.log('');
     console.log('📊 Test Summary');
     console.log(`Total: ${total}`);
     console.log(`Passed: ${passed} ✅`);
     console.log(`Failed: ${failed} ❌`);
-    
+
     if (failed > 0) {
       console.log('');
       console.log('❌ Failed Tests:');
@@ -228,7 +237,7 @@ class CrossPlatformTester {
           console.log(`   - ${result.name}: ${result.error}`);
         });
     }
-    
+
     console.log('');
     if (failed === 0) {
       console.log('🎉 All tests passed! CLI is compatible with this platform.');
@@ -240,11 +249,11 @@ class CrossPlatformTester {
   private generateReport(): void {
     const reportPath = path.join(process.cwd(), 'test-reports', `platform-test-${Date.now()}.json`);
     const reportDir = path.dirname(reportPath);
-    
+
     if (!fs.existsSync(reportDir)) {
       fs.mkdirSync(reportDir, { recursive: true });
     }
-    
+
     fs.writeFileSync(reportPath, JSON.stringify(this.results, null, 2));
     console.log(`📝 Test report saved to: ${reportPath}`);
   }
@@ -253,7 +262,7 @@ class CrossPlatformTester {
   async testShellCompatibility(): Promise<void> {
     console.log('');
     console.log('🐚 Testing Shell Compatibility');
-    
+
     const shellTests = [
       {
         name: 'Environment Variables',
@@ -295,11 +304,7 @@ class CrossPlatformTester {
 
   private async testPathResolution(): Promise<void> {
     // Test different path formats
-    const paths = [
-      this.cliPath,
-      path.resolve(this.cliPath),
-      path.normalize(this.cliPath)
-    ];
+    const paths = [this.cliPath, path.resolve(this.cliPath), path.normalize(this.cliPath)];
 
     for (const testPath of paths) {
       const result = await this.executeCommand('node', [testPath, '--version'], 5000);
@@ -333,9 +338,9 @@ function generatePlatformDocs(results: PlatformTestResults): string {
   docs += `**Platform**: ${results.platform}\n`;
   docs += `**Shell**: ${results.shell}\n`;
   docs += `**Node.js**: ${results.nodeVersion}\n\n`;
-  
+
   docs += `## Test Results\n\n`;
-  
+
   results.results.forEach(result => {
     const status = result.success ? '✅' : '❌';
     docs += `- ${status} **${result.name}** (${result.duration}ms)\n`;
@@ -343,48 +348,48 @@ function generatePlatformDocs(results: PlatformTestResults): string {
       docs += `  - Error: ${result.error}\n`;
     }
   });
-  
+
   docs += `\n## Platform-Specific Notes\n\n`;
-  
+
   if (results.platform.includes('Windows')) {
     docs += `### Windows Compatibility\n`;
     docs += `- CLI works with both PowerShell and Command Prompt\n`;
     docs += `- Unicode emojis display correctly in modern terminals\n`;
     docs += `- Path separators are handled automatically\n\n`;
   }
-  
+
   if (results.platform.includes('macOS')) {
     docs += `### macOS Compatibility\n`;
     docs += `- Full emoji support in Terminal.app and iTerm2\n`;
     docs += `- ANSI colors work correctly\n`;
     docs += `- Zsh and Bash shells both supported\n\n`;
   }
-  
+
   if (results.platform.includes('Linux')) {
     docs += `### Linux Compatibility\n`;
     docs += `- Tested with Bash, Zsh, and Fish shells\n`;
     docs += `- Unicode support depends on terminal configuration\n`;
     docs += `- ANSI colors work in most modern terminals\n\n`;
   }
-  
+
   return docs;
 }
 
 async function main() {
   const tester = new CrossPlatformTester();
-  
+
   await tester.runAllTests();
   await tester.testShellCompatibility();
-  
+
   // Generate platform-specific documentation
   const docs = generatePlatformDocs(tester['results']);
   const docsPath = path.join(process.cwd(), 'docs', 'platform-compatibility.md');
   const docsDir = path.dirname(docsPath);
-  
+
   if (!fs.existsSync(docsDir)) {
     fs.mkdirSync(docsDir, { recursive: true });
   }
-  
+
   fs.writeFileSync(docsPath, docs);
   console.log(`📖 Platform documentation generated: ${docsPath}`);
 }

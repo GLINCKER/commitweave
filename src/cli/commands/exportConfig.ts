@@ -16,10 +16,10 @@ export interface ExportOptions {
 export async function exportConfig(options: ExportOptions = {}): Promise<void> {
   await handleAsync(async () => {
     console.log(chalk.blue('📤 Exporting configuration...'));
-    
+
     // Load current configuration
     const config = await load();
-    
+
     // Process configuration based on format
     let exportConfig;
     if (options.format === 'minimal') {
@@ -29,10 +29,10 @@ export async function exportConfig(options: ExportOptions = {}): Promise<void> {
       exportConfig = stripSecrets(config);
       console.log(chalk.gray('   Using full format (secrets redacted)'));
     }
-    
+
     // Convert to JSON
     const configJson = JSON.stringify(exportConfig, null, 2);
-    
+
     // Output to file or stdout
     if (options.output) {
       await writeFile(options.output, configJson, 'utf-8');
@@ -42,7 +42,7 @@ export async function exportConfig(options: ExportOptions = {}): Promise<void> {
       console.log(configJson);
       console.log(chalk.gray('─'.repeat(50)));
     }
-    
+
     console.log(chalk.gray(`   Format: ${options.format || 'full'}`));
     console.log(chalk.gray(`   Version: ${config.version}`));
     console.log(chalk.gray(`   Secrets: ${options.format === 'full' ? 'redacted' : 'excluded'}`));
@@ -54,10 +54,10 @@ export async function exportConfig(options: ExportOptions = {}): Promise<void> {
  */
 export function parseExportArgs(args: string[]): ExportOptions {
   const options: ExportOptions = {};
-  
+
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    
+
     if (arg === '--output' || arg === '-o') {
       const nextArg = args[i + 1];
       if (nextArg && !nextArg.startsWith('--')) {
@@ -72,6 +72,6 @@ export function parseExportArgs(args: string[]): ExportOptions {
       }
     }
   }
-  
+
   return options;
 }

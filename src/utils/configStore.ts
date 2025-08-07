@@ -14,12 +14,12 @@ export const GLOBAL_CONFIG_PATH = join(homedir(), '.commitweaverc');
  */
 export async function load(): Promise<Config> {
   let config = { ...defaultConfig };
-  
+
   try {
     // First try local project config
     let configPath = CONFIG_PATH;
     let configExists = false;
-    
+
     try {
       await access(configPath);
       configExists = true;
@@ -35,23 +35,25 @@ export async function load(): Promise<Config> {
         return defaultConfig;
       }
     }
-    
+
     if (configExists) {
       const configFile = await readFile(configPath, 'utf-8');
       const rawConfig = JSON.parse(configFile);
-      
+
       // Validate and merge with defaults
       const parsedConfig = ConfigSchema.parse({
         ...defaultConfig,
         ...rawConfig
       });
-      
+
       return parsedConfig;
     }
   } catch (error) {
-    console.warn(`Warning: Failed to load config file, using defaults. Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.warn(
+      `Warning: Failed to load config file, using defaults. Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
-  
+
   return config;
 }
 
@@ -62,11 +64,13 @@ export async function save(config: Config): Promise<void> {
   try {
     // Validate config before saving
     const validatedConfig = ConfigSchema.parse(config);
-    
+
     const configJson = JSON.stringify(validatedConfig, null, 2);
     await writeFile(CONFIG_PATH, configJson, 'utf-8');
   } catch (error) {
-    throw new Error(`Failed to save configuration: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to save configuration: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 
@@ -77,11 +81,13 @@ export async function saveGlobal(config: Config): Promise<void> {
   try {
     // Validate config before saving
     const validatedConfig = ConfigSchema.parse(config);
-    
+
     const configJson = JSON.stringify(validatedConfig, null, 2);
     await writeFile(GLOBAL_CONFIG_PATH, configJson, 'utf-8');
   } catch (error) {
-    throw new Error(`Failed to save global configuration: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to save global configuration: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 

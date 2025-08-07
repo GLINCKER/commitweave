@@ -29,17 +29,17 @@ export async function createCommitFlow(): Promise<CommitFlowResult> {
     if (!chalk) {
       chalk = (await lazy(() => import('chalk'))).default;
     }
-    
+
     const config = await loadConfig();
     const input = await collectUserInput(config);
-    
+
     if (!input) {
       return { message: '', cancelled: true };
     }
 
     const commitMessage = await buildCommitMessage(config, input);
     const confirmed = await showPreviewAndConfirm(commitMessage);
-    
+
     if (!confirmed) {
       console.log(chalk.yellow('✨ Commit cancelled'));
       return { message: '', cancelled: true };
@@ -62,7 +62,7 @@ async function loadConfig(): Promise<Config> {
     ConfigSchema = configModule.ConfigSchema;
     defaultConfig = defaultConfigModule.defaultConfig;
   }
-  
+
   try {
     const configPath = join(process.cwd(), 'glinr-commit.json');
     const configFile = readFileSync(configPath, 'utf-8');
@@ -83,11 +83,11 @@ async function collectUserInput(config: Config): Promise<CommitInput | null> {
     if (!enquirer) {
       enquirer = (await lazy(() => import('enquirer'))).default;
     }
-    
+
     if (!chalk) {
       chalk = (await lazy(() => import('chalk'))).default;
     }
-    
+
     const typeChoices = config.commitTypes.map((type: CommitType) => {
       const emoji = config.emojiEnabled ? `${type.emoji} ` : '';
       return {
@@ -97,7 +97,7 @@ async function collectUserInput(config: Config): Promise<CommitInput | null> {
       };
     });
 
-    const answers = await enquirer.prompt([
+    const answers = (await enquirer.prompt([
       {
         type: 'select',
         name: 'type',
@@ -138,7 +138,7 @@ async function collectUserInput(config: Config): Promise<CommitInput | null> {
         message: 'Are there any breaking changes?',
         initial: false
       }
-    ]) as CommitInput;
+    ])) as CommitInput;
 
     return answers;
   } catch (error) {
@@ -155,13 +155,10 @@ async function buildCommitMessage(config: Config, input: CommitInput): Promise<s
     const builderModule = await lazy(() => import('../core/commitBuilder.js'));
     CommitBuilder = builderModule.CommitBuilder;
   }
-  
+
   const builder = new CommitBuilder(config);
-  
-  builder
-    .setType(input.type)
-    .setSubject(input.subject)
-    .setBreakingChange(input.breakingChange);
+
+  builder.setType(input.type).setSubject(input.subject).setBreakingChange(input.breakingChange);
 
   if (input.scope?.trim()) {
     builder.setScope(input.scope.trim());
@@ -181,10 +178,10 @@ async function showPreviewAndConfirm(message: string): Promise<boolean> {
   if (!enquirer) {
     enquirer = (await lazy(() => import('enquirer'))).default;
   }
-  
+
   console.log('\n' + chalk.cyan('📋 Commit Message Preview:'));
   console.log(chalk.gray('─'.repeat(50)));
-  
+
   const lines = message.split('\n');
   lines.forEach((line, index) => {
     if (index === 0) {
@@ -195,15 +192,15 @@ async function showPreviewAndConfirm(message: string): Promise<boolean> {
       console.log(chalk.white(line));
     }
   });
-  
+
   console.log(chalk.gray('─'.repeat(50)));
 
-  const { confirmed } = await enquirer.prompt({
+  const { confirmed } = (await enquirer.prompt({
     type: 'confirm',
     name: 'confirmed',
     message: 'Do you want to use this commit message?',
     initial: true
-  }) as { confirmed: boolean };
+  })) as { confirmed: boolean };
 
   return confirmed;
 }

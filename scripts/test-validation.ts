@@ -26,7 +26,8 @@ const testCases = [
   },
   {
     name: 'Subject too long',
-    message: 'feat: this is a very very very long subject line that exceeds the maximum allowed length for commit messages and should trigger validation errors',
+    message:
+      'feat: this is a very very very long subject line that exceeds the maximum allowed length for commit messages and should trigger validation errors',
     shouldPass: false
   },
   {
@@ -46,14 +47,15 @@ const testCases = [
   },
   {
     name: 'With scope and body',
-    message: 'fix(api): resolve user authentication issue\n\nThis commit fixes the authentication middleware that was causing\nusers to be logged out unexpectedly.',
+    message:
+      'fix(api): resolve user authentication issue\n\nThis commit fixes the authentication middleware that was causing\nusers to be logged out unexpectedly.',
     shouldPass: true
   }
 ];
 
 async function testValidation() {
   console.log(chalk.blue('🧪 Testing Commit Message Validation'));
-  console.log(chalk.gray('=' .repeat(60)));
+  console.log(chalk.gray('='.repeat(60)));
   console.log('');
 
   let passed = 0;
@@ -62,18 +64,18 @@ async function testValidation() {
   for (const testCase of testCases) {
     console.log(chalk.cyan(`Testing: ${testCase.name}`));
     console.log(chalk.gray('─'.repeat(40)));
-    
+
     try {
       const parsed = parseCommitMessage(testCase.message);
       const validation = validateCommit(parsed, defaultConfig);
-      
+
       const actuallyPassed = validation.valid;
       const expectedToPass = testCase.shouldPass;
-      
+
       if (actuallyPassed === expectedToPass) {
         console.log(chalk.green('✅ PASS'));
         passed++;
-        
+
         if (!validation.valid) {
           console.log(chalk.yellow('   Validation errors (as expected):'));
           validation.errors.forEach(error => {
@@ -85,7 +87,7 @@ async function testValidation() {
         failed++;
         console.log(chalk.red(`   Expected: ${expectedToPass ? 'VALID' : 'INVALID'}`));
         console.log(chalk.red(`   Actual: ${actuallyPassed ? 'VALID' : 'INVALID'}`));
-        
+
         if (!validation.valid) {
           console.log(chalk.yellow('   Errors:'));
           validation.errors.forEach(error => {
@@ -98,15 +100,15 @@ async function testValidation() {
       console.log(chalk.red(`   ${error instanceof Error ? error.message : 'Unknown error'}`));
       failed++;
     }
-    
+
     console.log('');
   }
-  
-  console.log(chalk.gray('=' .repeat(60)));
+
+  console.log(chalk.gray('='.repeat(60)));
   console.log(chalk.green(`✅ Passed: ${passed}`));
   console.log(chalk.red(`❌ Failed: ${failed}`));
   console.log(chalk.blue(`📊 Total: ${passed + failed}`));
-  
+
   if (failed === 0) {
     console.log(chalk.green('\n🎉 All validation tests passed!'));
   } else {

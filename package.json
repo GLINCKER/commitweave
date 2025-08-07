@@ -1,6 +1,6 @@
 {
   "name": "@typeweaver/commitweave",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "A modern CLI to write smart, structured, and beautiful git commit messages with emoji support, conventional commit rules, AI-powered summaries (optional), and built-in hooks.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -37,7 +37,7 @@
     "test:perf": "tsx tests/perf.spec.ts",
     "setup:branding": "node scripts/setup-branding.js",
     "bump:patch": "tsx scripts/bump-version.ts patch",
-    "bump:minor": "tsx scripts/bump-version.ts minor", 
+    "bump:minor": "tsx scripts/bump-version.ts minor",
     "bump:major": "tsx scripts/bump-version.ts major",
     "bump:prerelease": "tsx scripts/bump-version.ts prerelease",
     "bump:beta": "tsx scripts/bump-version.ts prerelease --preid beta",
@@ -46,8 +46,10 @@
     "release:minor": "tsx scripts/bump-version.ts minor --push",
     "release:major": "tsx scripts/bump-version.ts major --push",
     "release:beta": "tsx scripts/bump-version.ts prerelease --preid beta --push",
-    "lint": "echo 'Linting not configured yet'",
-    "format:check": "echo 'Prettier check not configured yet'",
+    "lint": "eslint src bin tests scripts --ext .ts,.js",
+    "lint:fix": "eslint src bin tests scripts --ext .ts,.js --fix",
+    "format": "prettier --write \"src/**/*.{ts,js,json}\" \"bin/**/*.{ts,js}\" \"tests/**/*.{ts,js}\" \"scripts/**/*.{ts,js}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js,json}\" \"bin/**/*.{ts,js}\" \"tests/**/*.{ts,js}\" \"scripts/**/*.{ts,js}\"",
     "type-check": "tsc --noEmit"
   },
   "keywords": [
@@ -69,6 +71,10 @@
   },
   "devDependencies": {
     "@types/node": "^20.10.5",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
+    "@typescript-eslint/parser": "^8.39.0",
+    "eslint": "^9.32.0",
+    "prettier": "^3.6.2",
     "tsx": "^4.6.2",
     "typescript": "^5.3.3"
   },

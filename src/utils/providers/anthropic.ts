@@ -77,7 +77,7 @@ Respond with JSON in this format:
       }
 
       if (response.status === 400) {
-        const errorData = await response.json().catch(() => ({})) as any;
+        const errorData = (await response.json().catch(() => ({}))) as any;
         const errorMessage = errorData.error?.message || errorData.error || 'Bad request';
         const { ClaudeValidationError } = await lazy(() => import('../../types/ai.js'));
         throw new ClaudeValidationError(errorMessage);
@@ -87,9 +87,9 @@ Respond with JSON in this format:
         throw new Error(`Anthropic API error: ${response.status} ${response.statusText}`);
       }
 
-      const data = await response.json() as any;
+      const data = (await response.json()) as any;
       const content = data.content?.[0]?.text;
-      
+
       if (!content) {
         throw new Error('No response from Anthropic API');
       }
@@ -101,7 +101,7 @@ Respond with JSON in this format:
       }
 
       const parsed = JSON.parse(jsonMatch[0]);
-      
+
       // Return enhanced response with usage information
       return {
         type: parsed.type || 'feat',
@@ -117,7 +117,7 @@ Respond with JSON in this format:
       if (error instanceof ClaudeRateLimitError || error instanceof ClaudeValidationError) {
         throw error;
       }
-      
+
       if (error instanceof Error) {
         throw new Error(`Anthropic API error: ${error.message}`);
       }

@@ -17,9 +17,19 @@ export const AIConfigSchema = z.object({
 
 export const ClaudeConfigSchema = z.object({
   enabled: z.boolean().default(false),
-  apiKey: z.string().default(""),
-  model: z.enum(["claude-3-haiku-20240307", "claude-3-sonnet-20240229"]).default("claude-3-haiku-20240307"),
+  apiKey: z.string().default(''),
+  model: z
+    .enum(['claude-3-haiku-20240307', 'claude-3-sonnet-20240229'])
+    .default('claude-3-haiku-20240307'),
   maxTokens: z.number().positive().default(4000)
+});
+
+export const UIConfigSchema = z.object({
+  fancyUI: z.boolean().default(true),
+  asciiArt: z.boolean().default(true),
+  animations: z.boolean().default(true),
+  colors: z.boolean().default(true),
+  emoji: z.boolean().default(true)
 });
 
 export const ConfigSchema = z.object({
@@ -28,17 +38,21 @@ export const ConfigSchema = z.object({
   conventionalCommits: z.boolean().default(true),
   aiSummary: z.boolean().default(false),
   ai: AIConfigSchema.optional(),
+  ui: UIConfigSchema.optional(),
   maxSubjectLength: z.number().default(50),
   maxBodyLength: z.number().default(72),
   claude: ClaudeConfigSchema.optional(),
-  version: z.string().optional().default("1.0"),
-  hooks: z.object({
-    preCommit: z.array(z.string()).optional(),
-    postCommit: z.array(z.string()).optional()
-  }).optional()
+  version: z.string().optional().default('1.0'),
+  hooks: z
+    .object({
+      preCommit: z.array(z.string()).optional(),
+      postCommit: z.array(z.string()).optional()
+    })
+    .optional()
 });
 
 export type CommitType = z.infer<typeof CommitTypeSchema>;
 export type AIConfig = z.infer<typeof AIConfigSchema>;
 export type ClaudeConfig = z.infer<typeof ClaudeConfigSchema>;
+export type UIConfig = z.infer<typeof UIConfigSchema>;
 export type Config = z.infer<typeof ConfigSchema>;
