@@ -541,9 +541,163 @@ async function editAndCommit(subject: string, body: string) {
 }
 
 async function handleCheckCommand() {
-  console.log('Check command not yet optimized for performance mode.');
-  console.log('Use: npx tsx scripts/check-commit.ts for now.');
-  process.exit(0);
+  const { execSync } = await lazy(() => import('child_process'));
+  const { readFile } = await lazy(() => import('fs/promises'));
+  const { join } = await lazy(() => import('path'));
+
+  interface ValidationResult {
+    valid: boolean;
+    errors: string[];
+  }
+
+  interface ParsedCommit {
+    type?: string;
+    scope?: string | undefined;
+    breaking?: boolean;
+    subject?: string;
+    body?: string | undefined;
+    footer?: string | undefined;
+  }
+
+  // Load configuration
+  async function loadConfig() {
+    try {
+      const configPath = join(process.cwd(), 'glinr-commit.json');
+      const configFile = await readFile(configPath, 'utf-8');
+      const configData = JSON.parse(configFile);
+      const { ConfigSchema } = await lazy(() => import('../src/types/config.js'));
+      return ConfigSchema.parse(configData);
+    } catch (error) {
+      const { defaultConfig } = await lazy(() => import('../src/config/defaultConfig.js'));
+      return defaultConfig;
+    }
+  }
+
+  // Get latest commit message
+  function getLatestCommitMessage(): string {
+    try {
+      const message = execSync('git log -1 --pretty=%B', { encoding: 'utf-8' });
+      return message.trim();
+    } catch (error) {
+      console.error(chalk.red('❌ Error: Failed to read commit message from git'));
+      console.error(chalk.yellow('💡 Make sure you are in a git repository with at least one commit'));
+      console.error(chalk.gray('   Run: ') + chalk.cyan('git log --oneline -1') + chalk.gray(' to check recent commits'));
+      process.exit(1);
+    }
+  }
+
+  // Check if commit is special (merge, revert, etc.)
+  function isSpecialCommit(message: string): boolean {
+    const header = message.split('\n')[0] || '';
+    return header.startsWith('Merge ') || 
+           header.startsWith('Revert ') || 
+           header.startsWith('fixup! ') || 
+           header.startsWith('squash! ') ||
+           header.toLowerCase().includes('initial commit');
+  }
+
+  // Parse conventional commit message
+  function parseCommitMessage(message: string): ParsedCommit {
+    const lines = message.split('\n');
+    const header = lines[0] || '';
+    
+    const conventionalPattern = /^(\w+)(\([^)]+\))?(!)?\s*:\s*(.+)$/;
+    const match = header.match(conventionalPattern);
+    
+    if (match) {
+      const [, type, scopeWithParens, breaking, subject] = match;
+      const scope = scopeWithParens ? scopeWithParens.slice(1, -1) : undefined;
+      const bodyText = lines.slice(2).join('\n').trim();
+      
+      return {
+        type,
+        scope,
+        breaking: !!breaking,
+        subject,
+        body: bodyText || undefined,
+        footer: undefined
+      };
+    }
+    
+    return { subject: header };
+  }
+
+  // Validate commit message
+  function validateCommitMessage(commit: ParsedCommit, config: any): ValidationResult {
+    const errors: string[] = [];
+    
+    if (!commit.type) {
+      errors.push('Missing commit type (e.g., feat, fix, docs)');
+      return { valid: false, errors };
+    }
+    
+    const validTypes = config.commitTypes.map((t: any) => t.type);
+    if (!validTypes.includes(commit.type)) {
+      errors.push(`Invalid commit type "${commit.type}". Valid types: ${validTypes.join(', ')}`);
+    }
+    
+    if (!commit.subject || commit.subject.length === 0) {
+      errors.push('Missing commit subject');
+    } else {
+      if (commit.subject.length > config.maxSubjectLength) {
+        errors.push(`Subject too long (${commit.subject.length}/${config.maxSubjectLength} chars)`);
+      }
+      
+      if (commit.subject.endsWith('.')) {
+        errors.push('Subject should not end with a period');
+      }
+      
+      if (commit.subject !== commit.subject.toLowerCase()) {
+        errors.push('Subject should be in lowercase');
+      }
+    }
+    
+    return { valid: errors.length === 0, errors };
+  }
+
+  // Main check logic
+  try {
+    const config = await loadConfig();
+    const commitMessage = getLatestCommitMessage();
+    
+    console.log(chalk.hex('#8b008b').bold('🔍 Checking latest commit message...\n'));
+    
+    if (isSpecialCommit(commitMessage)) {
+      console.log(chalk.yellow('⚠️  Special commit detected (merge/revert/fixup/initial)'));
+      console.log(chalk.gray('   Skipping conventional commit validation'));
+      console.log(chalk.green('✅ Check complete'));
+      return;
+    }
+    
+    const parsed = parseCommitMessage(commitMessage);
+    const validation = validateCommitMessage(parsed, config);
+    
+    console.log(chalk.gray('Latest commit:'));
+    console.log(chalk.cyan(`"${commitMessage.split('\n')[0]}"`));
+    console.log('');
+    
+    if (validation.valid) {
+      console.log(chalk.green('✅ Commit message follows conventional commit format'));
+      if (parsed.type) {
+        const commitType = config.commitTypes.find((t: any) => t.type === parsed.type);
+        if (commitType) {
+          console.log(chalk.gray(`   Type: ${commitType.emoji} ${parsed.type} - ${commitType.description}`));
+        }
+      }
+    } else {
+      console.log(chalk.red('❌ Commit message validation failed:'));
+      validation.errors.forEach(error => {
+        console.log(chalk.red(`   • ${error}`));
+      });
+      console.log('');
+      console.log(chalk.yellow('💡 Example valid commit:'));
+      console.log(chalk.green('   feat: add user authentication'));
+      console.log(chalk.green('   fix(api): resolve login timeout issue'));
+    }
+  } catch (error) {
+    console.error(chalk.red('❌ Validation failed:'), error instanceof Error ? error.message : error);
+    process.exit(1);
+  }
 }
 
 async function handleConfigSubmenu() {
