@@ -35,6 +35,34 @@ async function loadConfig(): Promise<any> {
   }
 }
 
+// Helper function to analyze diff statistics
+function analyzeDiffStats(diff: string) {
+  const lines = diff.split('\n');
+  const files = new Set<string>();
+  let additions = 0;
+  let deletions = 0;
+  
+  for (const line of lines) {
+    if (line.startsWith('+++') || line.startsWith('---')) {
+      const match = line.match(/[ab]\/(.*)/);
+      if (match && match[1] !== 'dev/null') {
+        files.add(match[1]);
+      }
+    } else if (line.startsWith('+') && !line.startsWith('+++')) {
+      additions++;
+    } else if (line.startsWith('-') && !line.startsWith('---')) {
+      deletions++;
+    }
+  }
+  
+  return {
+    filesChanged: files.size,
+    files: Array.from(files),
+    additions,
+    deletions
+  };
+}
+
 async function main() {
   const flags = parseFlags();
   
@@ -46,12 +74,14 @@ async function main() {
   // Handle version flag quickly for benchmarks
   if (flags.version) {
     const pkg = JSON.parse(await readFile(join(process.cwd(), 'package.json'), 'utf-8'));
-    console.log(pkg.version || '1.0.3');
+    console.log(pkg.version || '1.1.0');
     maybeReport();
     return;
   }
 
-  const useFancyUI = shouldUseFancyUI(flags);
+  // Load configuration to check UI preferences
+  const config = await loadConfig();
+  const useFancyUI = shouldUseFancyUI(flags, config);
   const interactive = isInteractiveMode(flags);
   const isConfig = isConfigCommand(flags);
   
@@ -150,43 +180,50 @@ async function main() {
     console.log(chalk.hex(BRAND_COLORS.accent).bold('🚀 What would you like to do today?'));
     console.log('');
     
-    const response = await prompt({
-      type: 'select',
-      name: 'action',
-      message: 'Choose an action:',
-      choices: [
-        { 
-          name: 'create', 
-          message: '📝 Create a new commit',
-          hint: 'Interactive commit message builder'
-        },
-        { 
-          name: 'ai', 
-          message: '🤖 AI-powered commit',
-          hint: 'Let AI analyze your changes and suggest a commit message'
-        },
-        { 
-          name: 'init', 
-          message: '⚙️  Setup configuration',
-          hint: 'Initialize or update commitweave settings'
-        },
-        { 
-          name: 'check', 
-          message: '🔍 Validate commit',
-          hint: 'Check if your latest commit follows conventions'
-        },
-        { 
-          name: 'config', 
-          message: '⚙️  Configuration',
-          hint: 'Manage your CommitWeave settings'
-        },
-        { 
-          name: 'help', 
-          message: '❓ Show help',
-          hint: 'View all available commands and options'
-        }
-      ]
-    });
+    let response;
+    try {
+      response = await prompt({
+        type: 'select',
+        name: 'action',
+        message: 'Choose an action:',
+        choices: [
+          { 
+            name: 'create', 
+            message: '📝 Create a new commit',
+            hint: 'Interactive commit message builder'
+          },
+          { 
+            name: 'ai', 
+            message: '🤖 AI-powered commit',
+            hint: 'Let AI analyze your changes and suggest a commit message'
+          },
+          { 
+            name: 'init', 
+            message: '⚙️  Setup configuration',
+            hint: 'Initialize or update commitweave settings'
+          },
+          { 
+            name: 'check', 
+            message: '🔍 Validate commit',
+            hint: 'Check if your latest commit follows conventions'
+          },
+          { 
+            name: 'config', 
+            message: '⚙️  Configuration',
+            hint: 'Manage your CommitWeave settings'
+          },
+          { 
+            name: 'help', 
+            message: '❓ Show help',
+            hint: 'View all available commands and options'
+          }
+        ]
+      });
+    } catch (error) {
+      // Handle Ctrl+C or other interruptions gracefully
+      console.log(chalk.yellow('\n👋 Goodbye! Use --help to see all available commands.'));
+      process.exit(0);
+    }
 
     switch ((response as { action: string }).action) {
       case 'create':
@@ -406,52 +443,78 @@ async function handleAICommitCommand(useFancyUI: boolean = false) {
       };
     }
 
-    if (useFancyUI) {
-      const { showLoadingAnimation } = await lazy(() => import('../src/ui/banner.js'));
-      await showLoadingAnimation('Connecting to repository', 400);
-    }
-
-    // Initialize git
+    // Initialize git with progress indicator
     const { simpleGit } = await lazy(() => import('simple-git'));
-    const git = simpleGit();
+    const { withProgress } = await lazy(() => import('../src/ui/progress.js'));
     
-    // Check if we're in a git repository
-    const isRepo = await git.checkIsRepo();
-    if (!isRepo) {
+    let git;
+    let diff;
+    
+    try {
+      git = await withProgress('🔍 Connecting to repository...', async () => {
+        const git = simpleGit();
+        // Check if we're in a git repository
+        const isRepo = await git.checkIsRepo();
+        if (!isRepo) {
+          throw new Error('Not a git repository');
+        }
+        return git;
+      });
+    } catch (error) {
       console.error(chalk.red('❌ Not a git repository'));
-      console.log(chalk.yellow('💡 Pro tip: Initialize a git repository first'));
-      console.log(chalk.gray('   Run: ') + chalk.cyan('git init'));
+      console.log(chalk.yellow('💡 Solution: Initialize a git repository'));
+      console.log(chalk.gray('   Quick fix: ') + chalk.cyan('git init'));
+      console.log(chalk.gray('   Or navigate to an existing repo: ') + chalk.cyan('cd your-project'));
+      console.log(chalk.gray('   🎯 Need help? Run: ') + chalk.cyan('commitweave --help'));
       return;
     }
 
-    if (useFancyUI) {
-      const { showLoadingAnimation } = await lazy(() => import('../src/ui/banner.js'));
-      await showLoadingAnimation('Analyzing staged changes', 800);
-    }
-
-    // Get staged diff
-    const diff = await git.diff(['--cached']);
-    
-    if (!diff || diff.trim().length === 0) {
+    try {
+      // Get staged diff with progress
+      diff = await withProgress('📊 Analyzing staged changes...', async (progress) => {
+        const diff = await git.diff(['--cached']);
+        
+        if (!diff || diff.trim().length === 0) {
+          throw new Error('No staged changes found');
+        }
+        
+        const lines = diff.split('\n').length;
+        progress.update(`📊 Analyzed ${lines} lines of changes`);
+        return diff;
+      });
+    } catch (error) {
       console.error(chalk.red('❌ No staged changes found'));
-      console.log(chalk.yellow('💡 Pro tip: Stage some changes first'));
-      console.log(chalk.gray('   Run: ') + chalk.cyan('git add .') + chalk.gray(' or ') + chalk.cyan('git add <file>'));
+      console.log(chalk.yellow('💡 Solution: Stage your changes first'));
+      console.log(chalk.gray('   Stage all changes: ') + chalk.cyan('git add .'));
+      console.log(chalk.gray('   Stage specific files: ') + chalk.cyan('git add src/file.ts'));
+      console.log(chalk.gray('   📊 Check status: ') + chalk.cyan('git status'));
+      console.log(chalk.gray('   🎯 Then retry: ') + chalk.cyan('commitweave ai'));
       return;
     }
 
-    console.log(chalk.green(`✨ Detected ${diff.split('\n').length} lines of changes`));
+    // Show diff summary
+    const diffStats = analyzeDiffStats(diff);
+    console.log(chalk.green(`✨ Detected changes in ${diffStats.filesChanged} files`));
+    console.log(chalk.gray(`   📊 ${diffStats.additions} additions, ${diffStats.deletions} deletions`));
+    if (diffStats.files.length <= 5) {
+      console.log(chalk.gray('   📁 Files: ') + diffStats.files.map(f => chalk.cyan(f)).join(', '));
+    } else {
+      console.log(chalk.gray(`   📁 Files: ${diffStats.files.slice(0, 3).map(f => chalk.cyan(f)).join(', ')} and ${diffStats.files.length - 3} more...`));
+    }
     console.log('');
 
-    // Generate AI summary
-    if (useFancyUI) {
-      const { showLoadingAnimation } = await lazy(() => import('../src/ui/banner.js'));
-      await showLoadingAnimation('AI is analyzing your code', 2000);
-    } else {
-      console.log('🤖 Analyzing your changes with AI...');
-    }
-    
+    // Generate AI summary with progress
     const { generateAISummary } = await lazy(() => import('../src/utils/ai.js'));
-    const { subject, body } = await generateAISummary(diff, aiConfig!);
+    const { subject, body } = await withProgress('🤖 Generating commit message...', async (progress) => {
+      progress.update('🤖 AI is analyzing your code changes...');
+      await new Promise(resolve => setTimeout(resolve, 500)); // Brief delay to show progress
+      
+      progress.update('✨ Creating commit message...');
+      const result = await generateAISummary(diff, aiConfig!);
+      
+      progress.update('🎯 Commit message ready!');
+      return result;
+    });
 
     // Show preview
     console.log(chalk.green('\n✨ AI-generated commit message:'));

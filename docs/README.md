@@ -96,6 +96,9 @@ CommitWeave is a modern CLI tool designed to create beautiful, structured, and c
 │ ✓ Interactive Menus                 │
 │ ✓ Progress Indicators               │
 │ ✓ Error Handling UX                 │
+│ ✓ Command Shortcuts (v, ls, ai)     │
+│ ✓ Enhanced Error Messages           │
+│ ✓ UI Configuration Options          │
 └─────────────────────────────────────┘
 ```
 
@@ -178,7 +181,9 @@ CommitWeave is a modern CLI tool designed to create beautiful, structured, and c
 │ ✓ Format Checking                   │
 │ ✓ Type Verification                 │
 │ ✓ Special Commit Detection          │
-│ ✓ Helpful Error Messages            │
+│ ✓ Native Check Command              │
+│ ✓ Actionable Error Solutions        │
+│ ✓ Diff Analysis & Statistics        │
 └─────────────────────────────────────┘
 ```
 
@@ -346,6 +351,13 @@ interface Config {
   conventionalCommits: boolean; // Default: true
   aiSummary: boolean;          // Default: false
   ai?: AIConfig;
+  ui?: {                       // UI Configuration (New)
+    fancyUI: boolean;          // Enable/disable fancy UI - Default: true
+    asciiArt: boolean;         // Show ASCII art banners - Default: true  
+    animations: boolean;       // Enable loading animations - Default: true
+    colors: boolean;           // Use terminal colors - Default: true
+    emoji: boolean;            // Display emojis in output - Default: true
+  };
   maxSubjectLength: number;    // Default: 50
   maxBodyLength: number;       // Default: 72
   hooks?: {
@@ -410,6 +422,22 @@ Implement JWT-based authentication system with
 proper token validation and refresh logic.
 
 BREAKING CHANGE: Legacy auth endpoints removed
+```
+
+### Command Shortcuts
+```bash
+# Power user shortcuts for faster workflow
+commitweave v          # Quick validate (shortcut for check)
+commitweave ls         # Quick list config (shortcut for list)  
+commitweave ai         # Direct AI commit (no -- flag needed)
+commitweave health     # Quick health check (shortcut for doctor)
+
+# All shortcuts with aliases:
+check    → validate, v
+list     → ls, show  
+reset    → clear
+doctor   → health, check-config
+ai       → (direct command, no flag needed)
 ```
 
 ## 🏆 Design Principles

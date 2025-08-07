@@ -1,6 +1,6 @@
 {
   "name": "@typeweaver/commitweave",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "A modern CLI to write smart, structured, and beautiful git commit messages with emoji support, conventional commit rules, AI-powered summaries (optional), and built-in hooks.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

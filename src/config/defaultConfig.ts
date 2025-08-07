@@ -105,6 +105,13 @@ export const defaultConfig: Config = {
     model: "claude-3-haiku-20240307",
     maxTokens: 4000
   },
+  ui: {
+    fancyUI: true,
+    asciiArt: true,
+    animations: true,
+    colors: true,
+    emoji: true
+  },
   version: "1.0"
 };
 

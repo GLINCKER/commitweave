@@ -7,7 +7,7 @@ This file provides comprehensive context for Claude AI sessions working on the C
 **CommitWeave** is a modern CLI tool for creating smart, structured, and beautiful git commit messages with emoji support, conventional commit rules, AI-powered summaries, and built-in hooks.
 
 ### Key Details
-- **Version**: 1.0.3
+- **Version**: 1.1.0
 - **Package**: @typeweaver/commitweave
 - **Language**: TypeScript (100%)
 - **Runtime**: Node.js >= 18.0.0
@@ -51,6 +51,8 @@ commitweave/
 │   ├── types/             # TypeScript definitions
 │   │   └── ai.ts          # AI provider types and custom error classes
 │   ├── ui/                # User interface components
+│   │   ├── banner.ts          # ASCII art banners and branding
+│   │   └── progress.ts        # Progress indicators and loading animations
 │   ├── utils/             # Utilities (git, ai)
 │   │   ├── ai.ts          # AI integration with enhanced error handling
 │   │   ├── configStore.ts  # Configuration loading and saving
@@ -100,6 +102,15 @@ commitweave/
 - **Configuration**: JSON-based config with Zod validation
 - **Validation**: Commit message format and length validation
 - **TypeScript**: 100% type coverage with comprehensive interfaces
+
+### Enhanced UX Features (Latest) ✅
+- **Native Check Command**: Full validation with detailed error messages and actionable solutions
+- **Progress Indicators**: Spinning animations with contextual status updates for all async operations
+- **Command Shortcuts**: Power user aliases (v, ls, ai, health, etc.) for faster workflow
+- **Enhanced Error Messages**: Multiple solution paths with copy-paste commands for quick fixes
+- **Diff Analysis**: Smart statistics showing file changes, additions, and deletions
+- **UI Configuration**: Granular control over ASCII art, animations, colors, and fancy UI elements
+- **Graceful Fallbacks**: Elegant error handling with informative guidance messages
 
 ### Performance Optimizations (Latest) ✅
 - **Ultra-fast Cold-start**: 23ms average startup time (13x better than 300ms target)
@@ -195,6 +206,13 @@ interface Config {
     model: string;
     maxTokens: number;
   };
+  ui?: {                              // UI configuration options (new)
+    fancyUI: boolean;                 // Enable/disable fancy UI elements
+    asciiArt: boolean;                // Show ASCII art banners
+    animations: boolean;              // Enable loading animations
+    colors: boolean;                  // Use terminal colors
+    emoji: boolean;                   // Display emojis in output
+  };
   maxSubjectLength: number;
   maxBodyLength: number;
   hooks?: {
@@ -229,15 +247,21 @@ commitweave --ai         # AI-powered commit generation
 commitweave --plain      # Disable fancy UI (for performance)
 commitweave --debug-perf # Enable performance reporting
 commitweave init         # Initialize configuration
-commitweave check        # Validate latest commit message
+commitweave check        # Validate latest commit message (aliases: validate, v)
 commitweave --help       # Show help
 
 # Configuration Management Commands
 commitweave export [options]        # Export current configuration
 commitweave import <source> [opts]  # Import configuration from file/URL
-commitweave list                     # Display current configuration
-commitweave reset [options]          # Reset configuration to defaults
-commitweave doctor                   # Validate and diagnose configuration
+commitweave list                     # Display current configuration (aliases: ls, show)
+commitweave reset [options]          # Reset configuration to defaults (alias: clear)
+commitweave doctor                   # Validate and diagnose configuration (aliases: health, check-config)
+
+# Command Shortcuts (Power User Aliases)
+commitweave ai           # Direct AI commit (no -- flag needed)
+commitweave v            # Quick validate (shortcut for check)
+commitweave ls           # Quick list config (shortcut for list)
+commitweave health       # Quick health check (shortcut for doctor)
 
 # Performance Commands
 npm run bench            # Run cold-start performance benchmark
@@ -441,6 +465,6 @@ CommitWeave has been thoroughly tested across multiple dimensions:
 ---
 
 **Last Updated**: Generated on 2025-08-07  
-**Context Version**: 4.0  
+**Context Version**: 4.1  
 **For**: Claude AI development sessions  
-**Recent Changes**: Enhanced VS Code extension with 5 commands, tabbed settings panel, Quick Commit workflow, commit history visualization, template system, real-time validation, Source Control integration, professional theming, and comprehensive git operations
+**Recent Changes**: Enhanced UX with native check command, progress indicators, command shortcuts, enhanced error messages, diff analysis, UI configuration options, and graceful fallbacks. All UI elements now configurable via UI config schema with ASCII art enabled by default.

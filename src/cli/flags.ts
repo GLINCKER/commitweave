@@ -62,12 +62,16 @@ export function parseFlags(argv: string[] = process.argv.slice(2)): ParsedFlags 
         process.env.COMMITWEAVE_DEBUG_PERF = "1";
         break;
       case '--ai':
+      case 'ai':
         flags.ai = true;
         break;
       case 'init':
+      case 'setup':
         flags.init = true;
         break;
       case 'check':
+      case 'validate':
+      case 'v':
         flags.check = true;
         break;
       case '--help':
@@ -85,12 +89,17 @@ export function parseFlags(argv: string[] = process.argv.slice(2)): ParsedFlags 
         flags.import = true;
         break;
       case 'list':
+      case 'ls':
+      case 'show':
         flags.list = true;
         break;
       case 'reset':
+      case 'clear':
         flags.reset = true;
         break;
       case 'doctor':
+      case 'health':
+      case 'check-config':
         flags.doctor = true;
         break;
       case '--force':
@@ -130,16 +139,22 @@ export function parseFlags(argv: string[] = process.argv.slice(2)): ParsedFlags 
 /**
  * Check if the current execution should use fancy UI
  * @param flags Parsed command flags
+ * @param config Optional config object to check UI preferences
  * @returns True if fancy UI should be enabled
  */
-export function shouldUseFancyUI(flags: ParsedFlags): boolean {
+export function shouldUseFancyUI(flags: ParsedFlags, config?: any): boolean {
   // Fancy UI disabled by --plain flag or if CLI_FANCY is explicitly disabled
   if (flags.plain || process.env.CLI_FANCY === "0") {
     return false;
   }
 
-  // Fancy UI enabled if CLI_FANCY=1 is set
-  return process.env.CLI_FANCY === "1";
+  // Check config for UI preferences
+  if (config?.ui?.fancyUI === false) {
+    return false;
+  }
+
+  // Enable fancy UI by default, unless explicitly disabled
+  return process.env.CLI_FANCY !== "0";
 }
 
 /**
