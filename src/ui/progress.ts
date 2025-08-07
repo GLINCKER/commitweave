@@ -65,23 +65,21 @@ export class ProgressIndicator {
   }
 }
 
-export function withProgress<T>(
+export async function withProgress<T>(
   message: string,
   operation: (progress: ProgressIndicator) => Promise<T>
 ): Promise<T> {
-  return new Promise(async (resolve, reject) => {
-    const progress = new ProgressIndicator(message);
-    progress.start();
+  const progress = new ProgressIndicator(message);
+  progress.start();
 
-    try {
-      const result = await operation(progress);
-      progress.succeed();
-      resolve(result);
-    } catch (error) {
-      progress.fail();
-      reject(error);
-    }
-  });
+  try {
+    const result = await operation(progress);
+    progress.succeed();
+    return result;
+  } catch (error) {
+    progress.fail();
+    throw error;
+  }
 }
 
 export const progressFrames = {
