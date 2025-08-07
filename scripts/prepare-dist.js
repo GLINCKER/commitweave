@@ -37,8 +37,14 @@ export * from './index.js';
   
   fs.writeFileSync('dist/index.mjs', esmWrapper);
   
-  // Copy CLI binary
-  copyFileSync(`${tempDir}/bin/index.cjs.js`, 'dist/bin.js');
+  // Copy and fix CLI binary (optimized version)
+  let binContent = fs.readFileSync(`${tempDir}/bin/index.js`, 'utf8');
+  
+  // Fix require paths to point to lib directory
+  binContent = binContent.replace(/require\("\.\.\/src\/([^"]+)"/g, 'require("./lib/$1"');
+  binContent = binContent.replace(/require\('\.\.\/src\/([^']+)'/g, 'require(\'./lib/$1\'');
+  
+  fs.writeFileSync('dist/bin.js', binContent);
   
   // Make binary executable
   fs.chmodSync('dist/bin.js', '755');

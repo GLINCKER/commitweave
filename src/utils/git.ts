@@ -1,20 +1,29 @@
-import simpleGit, { SimpleGit, StatusResult } from 'simple-git';
+import type { SimpleGit, StatusResult } from 'simple-git';
 import type { GitRepository, StagedChanges } from '../types/git.js';
+import { lazy } from './lazyImport.js';
 
 export type { GitRepository, StagedChanges };
 
 export class GitUtils {
-  private git: SimpleGit;
+  private git: SimpleGit | null = null;
   private rootDir: string;
 
   constructor(workingDir?: string) {
-    this.git = simpleGit(workingDir);
     this.rootDir = workingDir || globalThis.process?.cwd?.() || '.';
+  }
+  
+  public async getGit(): Promise<SimpleGit> {
+    if (!this.git) {
+      const { default: simpleGit } = await lazy(() => import('simple-git'));
+      this.git = simpleGit(this.rootDir);
+    }
+    return this.git;
   }
 
   async isGitRepository(): Promise<boolean> {
     try {
-      await this.git.status();
+      const git = await this.getGit();
+      await git.status();
       return true;
     } catch {
       return false;
@@ -22,7 +31,8 @@ export class GitUtils {
   }
 
   async getStatus(): Promise<StatusResult> {
-    return await this.git.status();
+    const git = await this.getGit();
+    return await git.status();
   }
 
   async getStagedChanges(): Promise<StagedChanges> {
@@ -38,10 +48,11 @@ export class GitUtils {
 
   async getDiff(staged = true): Promise<string> {
     try {
+      const git = await this.getGit();
       if (staged) {
-        return await this.git.diff(['--cached']);
+        return await git.diff(['--cached']);
       } else {
-        return await this.git.diff();
+        return await git.diff();
       }
     } catch (error) {
       console.warn('Failed to get git diff:', error);
@@ -50,11 +61,13 @@ export class GitUtils {
   }
 
   async stageAll(): Promise<void> {
-    await this.git.add('.');
+    const git = await this.getGit();
+    await git.add('.');
   }
 
   async stageFiles(files: string[]): Promise<void> {
-    await this.git.add(files);
+    const git = await this.getGit();
+    await git.add(files);
   }
 
   async commit(message: string, options: { dryRun?: boolean } = {}): Promise<string> {
@@ -63,7 +76,8 @@ export class GitUtils {
     }
 
     try {
-      const result = await this.git.commit(message);
+      const git = await this.getGit();
+      const result = await git.commit(message);
       return `Committed: ${result.commit} - ${result.summary?.changes} changes`;
     } catch (error) {
       throw new Error(`Failed to commit: ${error}`);
@@ -94,7 +108,8 @@ export class GitUtils {
         throw new Error('No staged changes to commit. Make sure you have changes to commit.');
       }
       
-      const result = await this.git.commit(message);
+      const git = await this.getGit();
+      const result = await git.commit(message);
       return `Successfully committed: ${result.commit} (${status.staged.length} file(s) staged)`;
     } catch (error) {
       if (error instanceof Error) {
@@ -105,13 +120,15 @@ export class GitUtils {
   }
 
   async getCurrentBranch(): Promise<string> {
-    const branchSummary = await this.git.branch();
+    const git = await this.getGit();
+    const branchSummary = await git.branch();
     return branchSummary.current;
   }
 
   async getLastCommitMessage(): Promise<string> {
     try {
-      const log = await this.git.log({ maxCount: 1 });
+      const git = await this.getGit();
+      const log = await git.log({ maxCount: 1 });
       return log.latest?.message || '';
     } catch {
       return '';
@@ -151,7 +168,7 @@ export async function createGitRepository(workingDir?: string): Promise<GitRepos
   }
 
   return {
-    git: gitUtils['git'],
+    git: await gitUtils.getGit(),
     rootDir: gitUtils['rootDir']
   };
 }

@@ -98,7 +98,14 @@ export const defaultConfig: Config = {
   conventionalCommits: true,
   aiSummary: false,
   maxSubjectLength: 50,
-  maxBodyLength: 72
+  maxBodyLength: 72,
+  claude: {
+    enabled: false,
+    apiKey: "",
+    model: "claude-3-haiku-20240307",
+    maxTokens: 4000
+  },
+  version: "1.0"
 };
 
 export function getCommitTypeByAlias(alias: string): CommitType | undefined {

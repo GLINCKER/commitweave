@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src {{cspSource}} 'unsafe-inline'; script-src 'nonce-{{nonce}}';">
+    <title>CommitWeave Settings</title>
+    <style>
+        body {
+            font-family: var(--vscode-font-family);
+            font-size: var(--vscode-font-size);
+            background-color: var(--vscode-editor-background);
+            color: var(--vscode-editor-foreground);
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: var(--vscode-foreground);
+            border-bottom: 1px solid var(--vscode-panel-border);
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .setting-group {
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: var(--vscode-editor-inactiveSelectionBackground);
+            border-radius: 6px;
+            border: 1px solid var(--vscode-panel-border);
+        }
+        
+        .setting-group h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: var(--vscode-foreground);
+        }
+        
+        .setting-item {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: var(--vscode-foreground);
+        }
+        
+        input[type="checkbox"] {
+            margin-right: 8px;
+            transform: scale(1.2);
+        }
+        
+        select {
+            width: 100%;
+            padding: 8px 12px;
+            background-color: var(--vscode-input-background);
+            border: 1px solid var(--vscode-input-border);
+            border-radius: 4px;
+            color: var(--vscode-input-foreground);
+            font-family: inherit;
+            font-size: inherit;
+        }
+        
+        select:focus {
+            outline: 1px solid var(--vscode-focusBorder);
+            border-color: var(--vscode-focusBorder);
+        }
+        
+        .description {
+            font-size: 0.9em;
+            color: var(--vscode-descriptionForeground);
+            margin-top: 5px;
+        }
+        
+        .button-container {
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        button {
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: inherit;
+            margin: 0 10px;
+        }
+        
+        button:hover {
+            background-color: var(--vscode-button-hoverBackground);
+        }
+        
+        button:active {
+            background-color: var(--vscode-button-activeBackground);
+        }
+        
+        .secondary-button {
+            background-color: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+        }
+        
+        .secondary-button:hover {
+            background-color: var(--vscode-button-secondaryHoverBackground);
+        }
+        
+        .status-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: var(--vscode-textBlockQuote-background);
+            border-left: 4px solid var(--vscode-textBlockQuote-border);
+            border-radius: 4px;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .status-badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+        
+        .status-success {
+            background-color: var(--vscode-testing-iconPassed);
+            color: var(--vscode-editor-background);
+        }
+        
+        .status-warning {
+            background-color: var(--vscode-notificationsWarningIcon-foreground);
+            color: var(--vscode-editor-background);
+        }
+        
+        .status-error {
+            background-color: var(--vscode-notificationsErrorIcon-foreground);
+            color: var(--vscode-editor-background);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧶 CommitWeave Settings</h1>
+        <div style="text-align: center; margin-bottom: 20px; font-size: 0.9em; color: var(--vscode-descriptionForeground);">
+            Developed & Published by <strong>GLINR STUDIOS</strong> • <strong>@glincker</strong>
+        </div>
+        
+        <div class="status-section">
+            <h3>Repository Status</h3>
+            <div class="status-item">
+                <span>Git Repository:</span>
+                <span class="status-badge" id="gitStatus">Checking...</span>
+            </div>
+            <div class="status-item">
+                <span>Staged Files:</span>
+                <span class="status-badge" id="stagedStatus">Checking...</span>
+            </div>
+            <div class="status-item">
+                <span>CommitWeave CLI:</span>
+                <span class="status-badge" id="cliStatus">Checking...</span>
+            </div>
+        </div>
+        
+        <form id="settingsForm">
+            <div class="setting-group">
+                <h3>Commit Message Options</h3>
+                
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="emojiEnabled" />
+                        Enable emojis in commit messages
+                    </label>
+                    <div class="description">
+                        Add relevant emojis to your commit messages (e.g., ✨ for features, 🐛 for bug fixes)
+                    </div>
+                </div>
+            </div>
+            
+            <div class="setting-group">
+                <h3>AI Configuration</h3>
+                
+                <div class="setting-item">
+                    <label for="aiProvider">AI Provider</label>
+                    <select id="aiProvider">
+                        <option value="openai">OpenAI (GPT models)</option>
+                        <option value="anthropic">Anthropic (Claude models)</option>
+                        <option value="mock">Mock Provider (for testing)</option>
+                    </select>
+                    <div class="description">
+                        Choose which AI service to use for generating commit messages
+                    </div>
+                </div>
+            </div>
+            
+            <div class="button-container">
+                <button type="submit">Save Settings</button>
+                <button type="button" class="secondary-button" onclick="loadCurrentSettings()">Reset</button>
+                <button type="button" class="secondary-button" onclick="checkStatus()">Refresh Status</button>
+            </div>
+        </form>
+        
+        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--vscode-panel-border); font-size: 0.8em; color: var(--vscode-descriptionForeground);">
+            <div>🏢 <strong>GLINR STUDIOS</strong> × <strong>GLINCKER</strong></div>
+            <div style="margin-top: 5px;">Part of the CommitWeave ecosystem 🧶✨</div>
+        </div>
+    </div>
+    
+    <script nonce="{{nonce}}">
+        const vscode = acquireVsCodeApi();
+        
+        // Load current settings when the page loads
+        window.addEventListener('load', () => {
+            loadCurrentSettings();
+            checkStatus();
+        });
+        
+        function loadCurrentSettings() {
+            vscode.postMessage({
+                command: 'loadSettings'
+            });
+        }
+        
+        function checkStatus() {
+            vscode.postMessage({
+                command: 'checkStatus'
+            });
+        }
+        
+        function updateStatusBadge(elementId, status, text) {
+            const element = document.getElementById(elementId);
+            element.textContent = text;
+            element.className = `status-badge status-${status}`;
+        }
+        
+        // Handle form submission
+        document.getElementById('settingsForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const settings = {
+                emojiEnabled: document.getElementById('emojiEnabled').checked,
+                aiProvider: document.getElementById('aiProvider').value
+            };
+            
+            vscode.postMessage({
+                command: 'saveSettings',
+                settings: settings
+            });
+        });
+        
+        // Handle messages from the extension
+        window.addEventListener('message', event => {
+            const message = event.data;
+            
+            switch (message.command) {
+                case 'currentSettings':
+                    // Update the form with current settings
+                    document.getElementById('emojiEnabled').checked = message.settings.emojiEnabled;
+                    document.getElementById('aiProvider').value = message.settings.aiProvider;
+                    break;
+                    
+                case 'settingsSaved':
+                    // Show success message or update UI
+                    console.log('Settings saved successfully');
+                    break;
+                    
+                case 'statusUpdate':
+                    // Update status badges
+                    const { git, staged, cli } = message.status;
+                    
+                    updateStatusBadge('gitStatus', 
+                        git.isRepo ? 'success' : 'error',
+                        git.isRepo ? 'Ready' : 'Not a Git repo'
+                    );
+                    
+                    updateStatusBadge('stagedStatus',
+                        staged.count > 0 ? 'success' : 'warning',
+                        staged.count > 0 ? `${staged.count} files` : 'No staged files'
+                    );
+                    
+                    updateStatusBadge('cliStatus',
+                        cli.available ? 'success' : 'error',
+                        cli.available ? 'Available' : 'Not installed'
+                    );
+                    break;
+            }
+        });
+    </script>
+</body>
+</html>

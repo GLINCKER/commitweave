@@ -1,0 +1,115 @@
+{
+  "name": "commitweave",
+  "displayName": "CommitWeave",
+  "description": "Smart, structured, and beautiful git commits with AI assistance - by GLINR STUDIOS",
+  "version": "0.1.0-beta.5",
+  "publisher": "glincker",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other",
+    "SCM Providers"
+  ],
+  "keywords": [
+    "git",
+    "commit",
+    "ai",
+    "conventional",
+    "typeweaver"
+  ],
+  "activationEvents": [
+    "onCommand:commitweave.create",
+    "onCommand:commitweave.ai",
+    "onCommand:commitweave.configure"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "commitweave.create",
+        "title": "CommitWeave: Create Commit",
+        "category": "CommitWeave"
+      },
+      {
+        "command": "commitweave.ai",
+        "title": "CommitWeave: AI Commit",
+        "category": "CommitWeave"
+      },
+      {
+        "command": "commitweave.configure",
+        "title": "CommitWeave: Configure",
+        "category": "CommitWeave"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "CommitWeave",
+      "properties": {
+        "commitweave.emojiEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable emoji in commit messages"
+        },
+        "commitweave.aiProvider": {
+          "type": "string",
+          "enum": [
+            "openai",
+            "anthropic",
+            "mock"
+          ],
+          "enumDescriptions": [
+            "OpenAI GPT models",
+            "Anthropic Claude models",
+            "Mock provider for testing"
+          ],
+          "default": "openai",
+          "description": "AI provider for generating commit messages"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run build",
+    "test": "node ./out/test/runTest.js",
+    "vscode:prepublish": "npm run build",
+    "package": "vsce package --no-yarn"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@types/node": "^20.0.0",
+    "@types/mocha": "^10.0.0",
+    "@types/glob": "^8.1.0",
+    "@vscode/test-electron": "^2.3.0",
+    "typescript": "^5.0.0",
+    "mocha": "^10.0.0",
+    "glob": "^10.0.0",
+    "@vscode/vsce": "^2.19.0"
+  },
+  "author": {
+    "name": "GLINR STUDIOS",
+    "url": "https://glinr.com"
+  },
+  "maintainers": [
+    {
+      "name": "GLINR STUDIOS",
+      "email": "support@glincker.com"
+    },
+    {
+      "name": "GLINCKER",
+      "url": "https://github.com/GLINCKER"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GLINCKER/commitweave.git",
+    "directory": "vscode-extension"
+  },
+  "bugs": {
+    "url": "https://github.com/GLINCKER/commitweave/issues"
+  },
+  "homepage": "https://github.com/GLINCKER/commitweave#readme",
+  "license": "MIT"
+}
