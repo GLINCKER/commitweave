@@ -17,7 +17,6 @@ pids
 *.pid.lock
 *.tmp
 .claude
-CLAUDE.md
 
 # Dependency directories
 node_modules/
@@ -101,6 +100,9 @@ test/fixtures/
 benchmark/
 jest.config.js
 *.stackdump
+test-config-*.json
+test-reports/
+platform-test-*.json
 
 # Firebase / Serverless / Turborepo / Vercel
 .firebase/
