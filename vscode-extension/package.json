@@ -2,7 +2,7 @@
   "name": "commitweave",
   "displayName": "CommitWeave",
   "description": "Smart, structured, and beautiful git commits with AI assistance - by GLINR STUDIOS",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "glincker",
   "engines": {
     "vscode": "^1.80.0"
@@ -23,7 +23,7 @@
     "onCommand:commitweave.ai",
     "onCommand:commitweave.configure"
   ],
-  "main": "./out/extension.js",
+  "main": "./out/src/extension.js",
   "contributes": {
     "commands": [
       {
