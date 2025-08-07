@@ -67,9 +67,9 @@ async function testCommitTypes() {
 
         // Check emoji inclusion
         const expectedEmoji = config.emojiEnabled ? commitType.emoji : '';
-        const hasExpectedEmoji = config.emojiEnabled ? 
-          message.includes(commitType.emoji) : 
-          !message.includes(commitType.emoji);
+        const hasExpectedEmoji = config.emojiEnabled
+          ? message.includes(commitType.emoji)
+          : !message.includes(commitType.emoji);
 
         if (!hasExpectedEmoji) {
           console.log(`❌ ${commitType.type}: Emoji handling incorrect`);
@@ -86,9 +86,10 @@ async function testCommitTypes() {
           console.log(`   ${' '.repeat(10)} | With body: ${messageWithBody.split('\n')[0]}`);
           console.log(`   ${' '.repeat(10)} | Breaking: ${messageWithBreaking.split('\n')[0]}`);
         }
-
       } catch (error) {
-        console.log(`❌ ${commitType.type}: Error - ${error instanceof Error ? error.message : 'Unknown error'}`);
+        console.log(
+          `❌ ${commitType.type}: Error - ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
         allPassed = false;
       }
     }
@@ -115,7 +116,7 @@ async function testConfigHandling() {
   const tempConfigPath1 = join(process.cwd(), 'test-config-emoji.json');
   writeFileSync(tempConfigPath1, JSON.stringify(configWithEmoji, null, 2));
 
-  // Test with emoji disabled  
+  // Test with emoji disabled
   const configWithoutEmoji = { ...defaultConfig, emojiEnabled: false };
   const tempConfigPath2 = join(process.cwd(), 'test-config-no-emoji.json');
   writeFileSync(tempConfigPath2, JSON.stringify(configWithoutEmoji, null, 2));

@@ -18,8 +18,7 @@ export function sinceStart(): number {
  * Controlled by COMMITWEAVE_DEBUG_PERF environment variable
  */
 export function maybeReport(): void {
-  if (process.env.COMMITWEAVE_DEBUG_PERF === "1") {
-    // eslint-disable-next-line no-console
+  if (process.env.COMMITWEAVE_DEBUG_PERF === '1') {
     console.log(`⚡ cold-start: ${sinceStart().toFixed(1)} ms`);
   }
 }
@@ -31,11 +30,10 @@ export function maybeReport(): void {
  */
 export function mark(name: string): () => void {
   const markStart = process.hrtime.bigint();
-  
+
   return () => {
-    if (process.env.COMMITWEAVE_DEBUG_PERF === "1") {
+    if (process.env.COMMITWEAVE_DEBUG_PERF === '1') {
       const duration = Number(process.hrtime.bigint() - markStart) / 1e6;
-      // eslint-disable-next-line no-console
       console.log(`⏱️  ${name}: ${duration.toFixed(1)} ms`);
     }
   };

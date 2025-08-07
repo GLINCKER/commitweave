@@ -8,7 +8,10 @@ export class ProgressIndicator {
   private frames: string[];
   private currentFrame: number = 0;
 
-  constructor(message: string, frames: string[] = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']) {
+  constructor(
+    message: string,
+    frames: string[] = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+  ) {
     this.message = message;
     this.frames = frames;
   }
@@ -16,7 +19,7 @@ export class ProgressIndicator {
   start(): void {
     // Hide cursor
     process.stdout.write('\x1B[?25l');
-    
+
     this.interval = setInterval(() => {
       const frame = this.frames[this.currentFrame];
       process.stdout.write(`\r${frame} ${this.message}`);

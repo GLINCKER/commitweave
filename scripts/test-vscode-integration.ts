@@ -18,8 +18,12 @@ class VSCodeIntegrationTester {
     this.extensionPath = path.join(process.cwd(), 'vscode-extension');
   }
 
-  private async executeCommand(command: string, args: string[], timeout = 5000): Promise<{ stdout: string; stderr: string; code: number }> {
-    return new Promise((resolve) => {
+  private async executeCommand(
+    command: string,
+    args: string[],
+    timeout = 5000
+  ): Promise<{ stdout: string; stderr: string; code: number }> {
+    return new Promise(resolve => {
       const child = spawn(command, args, {
         stdio: ['pipe', 'pipe', 'pipe']
       });
@@ -27,19 +31,19 @@ class VSCodeIntegrationTester {
       let stdout = '';
       let stderr = '';
 
-      child.stdout?.on('data', (data) => {
+      child.stdout?.on('data', data => {
         stdout += data.toString();
       });
 
-      child.stderr?.on('data', (data) => {
+      child.stderr?.on('data', data => {
         stderr += data.toString();
       });
 
-      child.on('close', (code) => {
+      child.on('close', code => {
         resolve({ stdout, stderr, code: code || 0 });
       });
 
-      child.on('error', (error) => {
+      child.on('error', error => {
         resolve({ stdout, stderr: error.message, code: 1 });
       });
 
@@ -54,7 +58,7 @@ class VSCodeIntegrationTester {
 
   async testCLIAvailability(): Promise<boolean> {
     console.log('Testing CLI availability for VS Code extension...');
-    
+
     try {
       // Test 1: Check if commitweave is globally available
       try {
@@ -99,7 +103,7 @@ class VSCodeIntegrationTester {
         args: [this.cliPath, '--help']
       },
       {
-        name: 'AI Commit (CLI Integration)', 
+        name: 'AI Commit (CLI Integration)',
         command: 'node',
         args: [this.cliPath, '--ai', '--help']
       },
@@ -164,7 +168,6 @@ class VSCodeIntegrationTester {
       } else {
         console.log('❌ Configuration validation failed');
       }
-
     } catch (error) {
       console.log(`❌ Configuration sync test failed: ${error}`);
     }
@@ -181,7 +184,10 @@ class VSCodeIntegrationTester {
 
         // Test git status for staged files
         const statusResult = await this.executeCommand('git', ['diff', '--cached', '--name-only']);
-        const stagedFiles = statusResult.stdout.trim().split('\n').filter(f => f.length > 0);
+        const stagedFiles = statusResult.stdout
+          .trim()
+          .split('\n')
+          .filter(f => f.length > 0);
         console.log(`ℹ️ Staged files: ${stagedFiles.length}`);
 
         // Test commit validation on last commit
@@ -226,7 +232,7 @@ class VSCodeIntegrationTester {
     for (const test of errorTests) {
       try {
         const result = await this.executeCommand(test.command, test.args, 5000);
-        
+
         if (test.expectError && result.code === 0) {
           console.log(`⚠️ ${test.name}: Expected error but command succeeded`);
         } else if (!test.expectError && result.code !== 0) {
@@ -251,11 +257,18 @@ class VSCodeIntegrationTester {
       }
 
       const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-      
+
       // Check required fields
-      const requiredFields = ['name', 'displayName', 'description', 'version', 'publisher', 'engines'];
+      const requiredFields = [
+        'name',
+        'displayName',
+        'description',
+        'version',
+        'publisher',
+        'engines'
+      ];
       const missingFields = requiredFields.filter(field => !manifest[field]);
-      
+
       if (missingFields.length === 0) {
         console.log('✅ Extension manifest has required fields');
       } else {
@@ -276,7 +289,6 @@ class VSCodeIntegrationTester {
       } else {
         console.log('⚠️ Extension has no activation events (may be intentional)');
       }
-
     } catch (error) {
       console.log(`❌ Extension manifest test failed: ${error}`);
     }
@@ -285,9 +297,9 @@ class VSCodeIntegrationTester {
   async runAllTests(): Promise<void> {
     console.log('🧩 CommitWeave VS Code Extension Integration Testing');
     console.log('======================================================');
-    
+
     const isCliAvailable = await this.testCLIAvailability();
-    
+
     if (!isCliAvailable) {
       console.log('\n❌ Cannot continue testing - CLI not available');
       console.log('\nTo fix this:');

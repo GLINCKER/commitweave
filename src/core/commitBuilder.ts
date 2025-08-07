@@ -23,7 +23,9 @@ export class CommitBuilder {
 
   setSubject(subject: string): this {
     if (subject.length > this.config.maxSubjectLength) {
-      throw new Error(`Subject length (${subject.length}) exceeds maximum allowed (${this.config.maxSubjectLength})`);
+      throw new Error(
+        `Subject length (${subject.length}) exceeds maximum allowed (${this.config.maxSubjectLength})`
+      );
     }
     this.message.subject = subject;
     return this;
@@ -54,11 +56,13 @@ export class CommitBuilder {
       throw new Error('Type and subject are required for commit message');
     }
 
-    const commitType = this.config.commitTypes.find((ct: CommitType) => ct.type === this.message.type);
+    const commitType = this.config.commitTypes.find(
+      (ct: CommitType) => ct.type === this.message.type
+    );
     const emoji = this.config.emojiEnabled && commitType?.emoji ? commitType.emoji + ' ' : '';
-    
+
     let header = '';
-    
+
     if (this.config.conventionalCommits) {
       const scope = this.message.scope ? `(${this.message.scope})` : '';
       const breaking = this.message.breakingChange ? '!' : '';
@@ -100,7 +104,10 @@ export class CommitBuilder {
       errors.push(`Subject length exceeds maximum (${this.config.maxSubjectLength} characters)`);
     }
 
-    if (this.message.type && !this.config.commitTypes.find((ct: CommitType) => ct.type === this.message.type)) {
+    if (
+      this.message.type &&
+      !this.config.commitTypes.find((ct: CommitType) => ct.type === this.message.type)
+    ) {
       errors.push(`Unknown commit type: ${this.message.type}`);
     }
 
@@ -116,16 +123,18 @@ export function createCommitMessage(
   subject: string,
   options: Partial<CommitOptions & CommitMessage> = {}
 ): string {
-  const builder = new CommitBuilder(options.config || { 
-    commitTypes: [], 
-    emojiEnabled: true, 
-    conventionalCommits: true, 
-    aiSummary: false, 
-    maxSubjectLength: 50, 
-    maxBodyLength: 72,
-    version: "1.0"
-  });
-  
+  const builder = new CommitBuilder(
+    options.config || {
+      commitTypes: [],
+      emojiEnabled: true,
+      conventionalCommits: true,
+      aiSummary: false,
+      maxSubjectLength: 50,
+      maxBodyLength: 72,
+      version: '1.0'
+    }
+  );
+
   builder.setType(type).setSubject(subject);
 
   if (options.scope) builder.setScope(options.scope);

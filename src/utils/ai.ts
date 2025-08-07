@@ -11,9 +11,12 @@ export class MockAIProvider implements AIProvider {
     return false;
   }
 
-  async generateCommitMessage(_diff: string, _options?: AISummaryOptions): Promise<CommitSuggestion> {
+  async generateCommitMessage(
+    _diff: string,
+    _options?: AISummaryOptions
+  ): Promise<CommitSuggestion> {
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     return {
       type: 'feat',
       subject: 'AI-generated commit message (mock)',
@@ -28,7 +31,7 @@ export class MockAIProvider implements AIProvider {
 
 export async function createAIProvider(options?: AISummaryOptions): Promise<AIProvider> {
   const provider = options?.provider || 'mock';
-  
+
   switch (provider) {
     case 'openai': {
       const { OpenAIProvider } = await lazy(() => import('./providers/openai.js'));
@@ -44,19 +47,23 @@ export async function createAIProvider(options?: AISummaryOptions): Promise<AIPr
 }
 
 export async function generateCommitSuggestion(
-  diff: string, 
+  diff: string,
   options?: AISummaryOptions
 ): Promise<CommitSuggestion> {
   const provider = await createAIProvider(options);
-  
+
   if (!provider.isConfigured() && options?.provider && options.provider !== 'mock') {
     const chalk = (await lazy(() => import('chalk'))).default;
-    console.log(chalk.yellow(`⚠️  ${options.provider} provider not configured, falling back to mock AI`));
-    console.log(chalk.gray(`   💡 Configure your ${options.provider} API key to enable real AI suggestions`));
+    console.log(
+      chalk.yellow(`⚠️  ${options.provider} provider not configured, falling back to mock AI`)
+    );
+    console.log(
+      chalk.gray(`   💡 Configure your ${options.provider} API key to enable real AI suggestions`)
+    );
     const fallbackProvider = await createAIProvider({ ...options, provider: 'mock' });
     return fallbackProvider.generateCommitMessage(diff, options);
   }
-  
+
   return provider.generateCommitMessage(diff, options);
 }
 
@@ -72,7 +79,7 @@ export async function isAIConfigured(options?: AISummaryOptions): Promise<boolea
  * @returns Promise resolving to subject and body
  */
 export async function generateAISummary(
-  diff: string, 
+  diff: string,
   config: AIConfig
 ): Promise<{ subject: string; body: string }> {
   // Convert AIConfig to AISummaryOptions
@@ -93,7 +100,7 @@ export async function generateAISummary(
 
   try {
     const suggestion = await generateCommitSuggestion(diff, options);
-    
+
     // Format the subject line with conventional commit format
     let subject = suggestion.subject;
     if (suggestion.type) {
@@ -114,11 +121,13 @@ export async function generateAISummary(
     // Fallback to mock if AI provider fails
     const chalk = (await lazy(() => import('chalk'))).default;
     console.log(chalk.yellow('⚠️  AI provider encountered an error, falling back to mock AI'));
-    console.log(chalk.gray(`   Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
-    
+    console.log(
+      chalk.gray(`   Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    );
+
     const mockProvider = new MockAIProvider();
     const suggestion = await mockProvider.generateCommitMessage(diff);
-    
+
     return {
       subject: suggestion.subject,
       body: suggestion.body || ''

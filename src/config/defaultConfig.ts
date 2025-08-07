@@ -15,10 +15,12 @@ export const ConfigSchema = z.object({
   aiSummary: z.boolean().default(false),
   maxSubjectLength: z.number().default(50),
   maxBodyLength: z.number().default(72),
-  hooks: z.object({
-    preCommit: z.array(z.string()).optional(),
-    postCommit: z.array(z.string()).optional()
-  }).optional()
+  hooks: z
+    .object({
+      preCommit: z.array(z.string()).optional(),
+      postCommit: z.array(z.string()).optional()
+    })
+    .optional()
 });
 
 export type { CommitType, Config };
@@ -81,7 +83,7 @@ export const defaultCommitTypes: CommitType[] = [
   {
     type: 'chore',
     emoji: '♻️',
-    description: 'Other changes that don\'t modify src or test files',
+    description: "Other changes that don't modify src or test files",
     aliases: ['maintenance']
   },
   {
@@ -101,8 +103,8 @@ export const defaultConfig: Config = {
   maxBodyLength: 72,
   claude: {
     enabled: false,
-    apiKey: "",
-    model: "claude-3-haiku-20240307",
+    apiKey: '',
+    model: 'claude-3-haiku-20240307',
     maxTokens: 4000
   },
   ui: {
@@ -112,11 +114,9 @@ export const defaultConfig: Config = {
     colors: true,
     emoji: true
   },
-  version: "1.0"
+  version: '1.0'
 };
 
 export function getCommitTypeByAlias(alias: string): CommitType | undefined {
-  return defaultCommitTypes.find(
-    type => type.type === alias || type.aliases?.includes(alias)
-  );
+  return defaultCommitTypes.find(type => type.type === alias || type.aliases?.includes(alias));
 }

@@ -44,8 +44,14 @@ function getLatestCommitMessage(): string {
     return message.trim();
   } catch (error) {
     console.error(chalk.red('❌ Error: Failed to read commit message from git'));
-    console.error(chalk.yellow('💡 Make sure you are in a git repository with at least one commit'));
-    console.error(chalk.gray('   Run: ') + chalk.cyan('git log --oneline -1') + chalk.gray(' to check recent commits'));
+    console.error(
+      chalk.yellow('💡 Make sure you are in a git repository with at least one commit')
+    );
+    console.error(
+      chalk.gray('   Run: ') +
+        chalk.cyan('git log --oneline -1') +
+        chalk.gray(' to check recent commits')
+    );
     process.exit(1);
   }
 }
@@ -55,27 +61,27 @@ function getLatestCommitMessage(): string {
  */
 function isSpecialCommit(message: string): boolean {
   const header = message.split('\n')[0] || '';
-  
+
   // Check for merge commits
   if (header.startsWith('Merge ')) {
     return true;
   }
-  
+
   // Check for revert commits
   if (header.startsWith('Revert ')) {
     return true;
   }
-  
+
   // Check for fixup commits
   if (header.startsWith('fixup! ') || header.startsWith('squash! ')) {
     return true;
   }
-  
+
   // Check for initial commits
   if (header.toLowerCase().includes('initial commit')) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -85,16 +91,16 @@ function isSpecialCommit(message: string): boolean {
 function parseCommitMessage(message: string): ParsedCommit {
   const lines = message.split('\n');
   const header = lines[0] || '';
-  
+
   // Match conventional commit format: type(scope)!: subject
   const conventionalPattern = /^(\w+)(\([^)]+\))?(!)?\s*:\s*(.+)$/;
   const match = header.match(conventionalPattern);
-  
+
   if (match) {
     const [, type, scopeWithParens, breaking, subject] = match;
     const scope = scopeWithParens ? scopeWithParens.slice(1, -1) : undefined;
     const bodyText = lines.slice(2).join('\n').trim();
-    
+
     return {
       type,
       scope,
@@ -104,7 +110,7 @@ function parseCommitMessage(message: string): ParsedCommit {
       footer: undefined // Could be parsed more thoroughly if needed
     };
   }
-  
+
   // If not conventional format, treat entire header as subject
   const bodyText = lines.slice(2).join('\n').trim();
   return {
@@ -119,15 +125,16 @@ function parseCommitMessage(message: string): ParsedCommit {
 function findClosestType(input: string, validTypes: string[]): string | null {
   let closestMatch = null;
   let minDistance = Infinity;
-  
+
   for (const type of validTypes) {
     const distance = levenshteinDistance(input.toLowerCase(), type.toLowerCase());
-    if (distance < minDistance && distance <= 2) { // Only suggest if within 2 edit distance
+    if (distance < minDistance && distance <= 2) {
+      // Only suggest if within 2 edit distance
       minDistance = distance;
       closestMatch = type;
     }
   }
-  
+
   return closestMatch;
 }
 
@@ -136,15 +143,15 @@ function findClosestType(input: string, validTypes: string[]): string | null {
  */
 function levenshteinDistance(str1: string, str2: string): number {
   const matrix = [];
-  
+
   for (let i = 0; i <= str2.length; i++) {
     matrix[i] = [i];
   }
-  
+
   for (let j = 0; j <= str1.length; j++) {
     matrix[0][j] = j;
   }
-  
+
   for (let i = 1; i <= str2.length; i++) {
     for (let j = 1; j <= str1.length; j++) {
       if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
@@ -158,7 +165,7 @@ function levenshteinDistance(str1: string, str2: string): number {
       }
     }
   }
-  
+
   return matrix[str2.length][str1.length];
 }
 
@@ -167,7 +174,7 @@ function levenshteinDistance(str1: string, str2: string): number {
  */
 function validateCommit(parsed: ParsedCommit, config: Config): ValidationResult {
   const errors: string[] = [];
-  
+
   // Check if conventional commits are required
   if (config.conventionalCommits) {
     if (!parsed.type) {
@@ -188,7 +195,7 @@ function validateCommit(parsed: ParsedCommit, config: Config): ValidationResult 
       }
     }
   }
-  
+
   // Check subject requirements
   if (!parsed.subject || parsed.subject.length === 0) {
     errors.push('❌ Commit subject is missing');
@@ -197,24 +204,30 @@ function validateCommit(parsed: ParsedCommit, config: Config): ValidationResult 
     // Check subject length
     if (parsed.subject.length > config.maxSubjectLength) {
       const excess = parsed.subject.length - config.maxSubjectLength;
-      errors.push(`📏 Subject too long: ${parsed.subject.length} characters (max: ${config.maxSubjectLength})`);
+      errors.push(
+        `📏 Subject too long: ${parsed.subject.length} characters (max: ${config.maxSubjectLength})`
+      );
       errors.push(`💡 Remove ${excess} characters to meet the limit`);
       errors.push(`✂️  Try: "${parsed.subject.slice(0, config.maxSubjectLength - 3)}..."`);
     }
-    
+
     // Check subject format (should not end with period)
     if (parsed.subject.endsWith('.')) {
       errors.push('🔤 Subject should not end with a period');
       errors.push(`✅ Use: "${parsed.subject.slice(0, -1)}"`);
     }
-    
+
     // Check subject case (should start with lowercase unless it's a proper noun)
-    if (config.conventionalCommits && parsed.subject && parsed.subject[0] !== parsed.subject[0].toLowerCase()) {
+    if (
+      config.conventionalCommits &&
+      parsed.subject &&
+      parsed.subject[0] !== parsed.subject[0].toLowerCase()
+    ) {
       errors.push('🔤 Subject should start with lowercase letter');
       errors.push(`✅ Use: "${parsed.subject[0].toLowerCase() + parsed.subject.slice(1)}"`);
     }
   }
-  
+
   // Check body length if present
   if (parsed.body && config.maxBodyLength) {
     const bodyLines = parsed.body.split('\n');
@@ -222,14 +235,16 @@ function validateCommit(parsed: ParsedCommit, config: Config): ValidationResult 
       const line = bodyLines[i];
       if (line.length > config.maxBodyLength) {
         const excess = line.length - config.maxBodyLength;
-        errors.push(`📝 Body line ${i + 1} too long: ${line.length} characters (max: ${config.maxBodyLength})`);
+        errors.push(
+          `📝 Body line ${i + 1} too long: ${line.length} characters (max: ${config.maxBodyLength})`
+        );
         errors.push(`💡 Remove ${excess} characters or split into multiple lines`);
         errors.push(`✂️  Consider: "${line.slice(0, config.maxBodyLength - 3)}..."`);
         break;
       }
     }
   }
-  
+
   return {
     valid: errors.length === 0,
     errors
@@ -242,11 +257,11 @@ function validateCommit(parsed: ParsedCommit, config: Config): ValidationResult 
 async function main() {
   try {
     console.log(chalk.blue('🔍 Checking commit message...'));
-    
+
     // Load configuration
     const config = await loadConfig();
     console.log(chalk.gray('✓ Configuration loaded'));
-    
+
     // Get commit message
     const commitMessage = getLatestCommitMessage();
     console.log(chalk.cyan('\n📝 Latest commit message:'));
@@ -255,19 +270,21 @@ async function main() {
       console.log(chalk.white('│ ') + chalk.gray(line));
     });
     console.log(chalk.white('└' + '─'.repeat(50)));
-    
+
     // Check if this is a special commit that should be excluded from validation
     if (isSpecialCommit(commitMessage)) {
-      console.log(chalk.green('✅ Special commit detected (merge/revert/fixup) - skipping validation'));
+      console.log(
+        chalk.green('✅ Special commit detected (merge/revert/fixup) - skipping validation')
+      );
       process.exit(0);
     }
-    
+
     // Parse commit message
     const parsed = parseCommitMessage(commitMessage);
-    
+
     // Validate commit
     const validation = validateCommit(parsed, config);
-    
+
     if (validation.valid) {
       console.log(chalk.green('\n🎉 Commit message is valid!'));
       console.log(chalk.gray('   Your commit follows all conventional commit standards'));
@@ -280,11 +297,15 @@ async function main() {
       }
       console.log('');
       console.log(chalk.yellow('🛠️  How to fix:'));
-      
+
       // Show helpful information
       if (config.conventionalCommits) {
-        console.log(chalk.cyan('\n📋 Conventional commit format: ') + chalk.white('type(scope): subject'));
-        console.log(chalk.cyan('🔧 Example: ') + chalk.green('feat(auth): add user login functionality'));
+        console.log(
+          chalk.cyan('\n📋 Conventional commit format: ') + chalk.white('type(scope): subject')
+        );
+        console.log(
+          chalk.cyan('🔧 Example: ') + chalk.green('feat(auth): add user login functionality')
+        );
         console.log('');
         console.log(chalk.cyan('✅ Available types:'));
         for (const type of config.commitTypes) {
@@ -292,13 +313,13 @@ async function main() {
           console.log(chalk.white(`  ${emoji}${type.type.padEnd(10)} - ${type.description}`));
         }
       }
-      
+
       console.log(chalk.gray('\n💡 Pro tips:'));
       console.log(chalk.gray('  • Keep subject line under 50 characters'));
       console.log(chalk.gray('  • Use imperative mood (e.g., "add" not "added")'));
-      console.log(chalk.gray('  • Don\'t end subject line with a period'));
+      console.log(chalk.gray("  • Don't end subject line with a period"));
       console.log(chalk.gray('  • Use body to explain what and why, not how'));
-      
+
       process.exit(1);
     }
   } catch (error) {

@@ -42,12 +42,12 @@ class AIFallbackTester {
   }
 
   private async executeCommand(
-    command: string, 
-    args: string[], 
+    command: string,
+    args: string[],
     timeout = 15000,
     env?: Record<string, string>
   ): Promise<{ stdout: string; stderr: string; code: number }> {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const child = spawn(command, args, {
         stdio: ['pipe', 'pipe', 'pipe'],
         env: { ...process.env, ...env }
@@ -56,19 +56,19 @@ class AIFallbackTester {
       let stdout = '';
       let stderr = '';
 
-      child.stdout?.on('data', (data) => {
+      child.stdout?.on('data', data => {
         stdout += data.toString();
       });
 
-      child.stderr?.on('data', (data) => {
+      child.stderr?.on('data', data => {
         stderr += data.toString();
       });
 
-      child.on('close', (code) => {
+      child.on('close', code => {
         resolve({ stdout, stderr, code: code || 0 });
       });
 
-      child.on('error', (error) => {
+      child.on('error', error => {
         resolve({ stdout, stderr: error.message, code: 1 });
       });
 
@@ -85,13 +85,13 @@ class AIFallbackTester {
     try {
       const result = await testFn();
       this.testResults.push(result);
-      
+
       const statusIcon = result.success ? '✅' : '❌';
       const fallbackInfo = result.fallbackDetected ? ' (Fallback: ✅)' : '';
       const warningInfo = result.warningShown ? ' (Warning: ✅)' : '';
-      
+
       console.log(`${statusIcon} ${name} (${result.duration}ms)${fallbackInfo}${warningInfo}`);
-      
+
       if (!result.success && result.error) {
         console.log(`   Error: ${result.error}`);
       }
@@ -102,7 +102,7 @@ class AIFallbackTester {
         error: error.message,
         duration: 0
       };
-      
+
       this.testResults.push(result);
       console.log(`❌ ${name}`);
       console.log(`   Error: ${error.message}`);
@@ -124,7 +124,7 @@ class AIFallbackTester {
   // Internal API Tests (existing functionality)
   async testInternalAPIFallback(): Promise<TestResult> {
     const startTime = Date.now();
-    
+
     const mockDiff = `diff --git a/src/example.ts b/src/example.ts
 index 1234567..abcdefg 100644
 --- a/src/example.ts
@@ -142,15 +142,15 @@ index 1234567..abcdefg 100644
     try {
       // Test OpenAI without API key
       const options: AISummaryOptions = {
-        provider: 'openai',
+        provider: 'openai'
         // No API key provided
       };
-      
+
       const suggestion = await generateCommitSuggestion(mockDiff, options);
       const duration = Date.now() - startTime;
-      
+
       const isMockProvider = suggestion.confidence === 0.8;
-      
+
       return {
         name: 'Internal API Fallback',
         success: true,
@@ -173,7 +173,7 @@ index 1234567..abcdefg 100644
   // CLI Command Tests (new functionality)
   async testNetworkFailureSimulation(): Promise<TestResult> {
     const startTime = Date.now();
-    
+
     // Create config with invalid OpenAI endpoint to simulate network failure
     const networkFailureConfig = {
       version: '1.0',
@@ -198,17 +198,19 @@ index 1234567..abcdefg 100644
     const duration = Date.now() - startTime;
 
     // Check if it fell back gracefully to Mock AI
-    const fallbackDetected = result.stdout.includes('Mock AI') || 
-                           result.stdout.includes('fallback') || 
-                           result.stderr.includes('fallback') ||
-                           result.stderr.includes('Mock') ||
-                           result.code === 0; // Any success indicates fallback worked
+    const fallbackDetected =
+      result.stdout.includes('Mock AI') ||
+      result.stdout.includes('fallback') ||
+      result.stderr.includes('fallback') ||
+      result.stderr.includes('Mock') ||
+      result.code === 0; // Any success indicates fallback worked
 
-    const warningShown = result.stderr.includes('network') || 
-                        result.stderr.includes('connection') ||
-                        result.stderr.includes('failed') ||
-                        result.stdout.includes('Warning') ||
-                        result.stderr.includes('Warning');
+    const warningShown =
+      result.stderr.includes('network') ||
+      result.stderr.includes('connection') ||
+      result.stderr.includes('failed') ||
+      result.stdout.includes('Warning') ||
+      result.stderr.includes('Warning');
 
     return {
       name: 'Network Failure Simulation',
@@ -223,7 +225,7 @@ index 1234567..abcdefg 100644
 
   async testInvalidAPIKey(): Promise<TestResult> {
     const startTime = Date.now();
-    
+
     // Create config with invalid API key
     const invalidKeyConfig = {
       version: '1.0',
@@ -234,9 +236,7 @@ index 1234567..abcdefg 100644
         apiKey: 'invalid-api-key-12345',
         maxTokens: 150
       },
-      commitTypes: [
-        { type: 'feat', emoji: '✨', description: 'A new feature' }
-      ]
+      commitTypes: [{ type: 'feat', emoji: '✨', description: 'A new feature' }]
     };
 
     this.createTestConfig(invalidKeyConfig);
@@ -244,15 +244,17 @@ index 1234567..abcdefg 100644
     const result = await this.executeCommand('node', [this.cliPath, '--ai'], 15000);
     const duration = Date.now() - startTime;
 
-    const fallbackDetected = result.stdout.includes('Mock AI') || 
-                           result.stdout.includes('fallback') ||
-                           result.stderr.includes('fallback') ||
-                           result.code === 0;
+    const fallbackDetected =
+      result.stdout.includes('Mock AI') ||
+      result.stdout.includes('fallback') ||
+      result.stderr.includes('fallback') ||
+      result.code === 0;
 
-    const warningShown = result.stderr.includes('API key') || 
-                        result.stderr.includes('authentication') ||
-                        result.stderr.includes('unauthorized') ||
-                        result.stdout.includes('Warning');
+    const warningShown =
+      result.stderr.includes('API key') ||
+      result.stderr.includes('authentication') ||
+      result.stderr.includes('unauthorized') ||
+      result.stdout.includes('Warning');
 
     return {
       name: 'Invalid API Key Test',
@@ -267,7 +269,7 @@ index 1234567..abcdefg 100644
 
   async testVSCodeExtensionFallback(): Promise<TestResult> {
     const startTime = Date.now();
-    
+
     // Simulate VS Code extension scenario with failing AI
     const extensionConfig = {
       version: '1.0',
@@ -292,15 +294,17 @@ index 1234567..abcdefg 100644
 
     const duration = Date.now() - startTime;
 
-    const fallbackDetected = aiResult.stdout.includes('Mock AI') || 
-                           aiResult.stdout.includes('fallback') ||
-                           aiResult.code === 0;
+    const fallbackDetected =
+      aiResult.stdout.includes('Mock AI') ||
+      aiResult.stdout.includes('fallback') ||
+      aiResult.code === 0;
 
     const extensionCommandsWork = listResult.code === 0 && doctorResult.code === 0;
 
-    const warningShown = aiResult.stderr.includes('Warning') || 
-                        aiResult.stderr.includes('fallback') ||
-                        aiResult.stderr.includes('failed');
+    const warningShown =
+      aiResult.stderr.includes('Warning') ||
+      aiResult.stderr.includes('fallback') ||
+      aiResult.stderr.includes('failed');
 
     return {
       name: 'VS Code Extension Fallback Simulation',
@@ -315,15 +319,13 @@ index 1234567..abcdefg 100644
 
   async testMockAIAlwaysAvailable(): Promise<TestResult> {
     const startTime = Date.now();
-    
+
     // Test that Mock AI is always available as ultimate fallback
     const minimalConfig = {
       version: '1.0',
       emojiEnabled: true,
       conventionalCommits: true,
-      commitTypes: [
-        { type: 'feat', emoji: '✨', description: 'A new feature' }
-      ]
+      commitTypes: [{ type: 'feat', emoji: '✨', description: 'A new feature' }]
       // No AI configuration at all
     };
 
@@ -332,10 +334,11 @@ index 1234567..abcdefg 100644
     const result = await this.executeCommand('node', [this.cliPath, '--ai'], 10000);
     const duration = Date.now() - startTime;
 
-    const mockAIWorking = result.code === 0 && 
-                         (result.stdout.includes('Mock AI') || 
-                          result.stdout.includes('commit message') ||
-                          result.stdout.includes('feat'));
+    const mockAIWorking =
+      result.code === 0 &&
+      (result.stdout.includes('Mock AI') ||
+        result.stdout.includes('commit message') ||
+        result.stdout.includes('feat'));
 
     return {
       name: 'Mock AI Always Available Test',
@@ -380,7 +383,7 @@ index 1234567..abcdefg 100644
     const failed = total - passed;
     const fallbacksDetected = this.testResults.filter(r => r.fallbackDetected).length;
     const warningsShown = this.testResults.filter(r => r.warningShown).length;
-    
+
     console.log('');
     console.log('📊 AI Fallback Testing Summary');
     console.log('==============================');
@@ -390,7 +393,7 @@ index 1234567..abcdefg 100644
     console.log(`Fallbacks Detected: ${fallbacksDetected} 🛡️`);
     console.log(`Warnings Shown: ${warningsShown} ⚠️`);
     console.log('');
-    
+
     if (failed > 0) {
       console.log('❌ Failed Tests:');
       this.testResults
@@ -400,10 +403,10 @@ index 1234567..abcdefg 100644
         });
       console.log('');
     }
-    
+
     const avgDuration = this.testResults.reduce((sum, r) => sum + r.duration, 0) / total;
     console.log(`Average test duration: ${avgDuration.toFixed(1)}ms`);
-    
+
     if (failed === 0 && fallbacksDetected >= 3) {
       console.log('');
       console.log('🎉 All fallback tests passed!');

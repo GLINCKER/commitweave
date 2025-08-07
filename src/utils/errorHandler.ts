@@ -1,13 +1,13 @@
 import chalk from 'chalk';
 import type { AIError } from '../types/ai.js';
-import { 
-  ClaudeRateLimitError, 
-  ClaudeValidationError, 
-  OpenAIError, 
-  NetworkTimeoutError, 
-  GitRepoError, 
+import {
+  ClaudeRateLimitError,
+  ClaudeValidationError,
+  OpenAIError,
+  NetworkTimeoutError,
+  GitRepoError,
   InvalidConfigError,
-  CommitValidationError 
+  CommitValidationError
 } from '../types/ai.js';
 
 /**
@@ -17,7 +17,8 @@ function getErrorMessage(error: Error): { message: string; suggestion?: string }
   if (error instanceof ClaudeRateLimitError) {
     return {
       message: 'Claude API rate limit exceeded',
-      suggestion: 'Please wait a moment before trying again, or consider upgrading your Claude API plan'
+      suggestion:
+        'Please wait a moment before trying again, or consider upgrading your Claude API plan'
     };
   }
 
@@ -57,7 +58,10 @@ function getErrorMessage(error: Error): { message: string; suggestion?: string }
   }
 
   if (error instanceof CommitValidationError) {
-    const suggestions = error.suggestions.length > 0 ? error.suggestions.join('\n   ') : 'Follow conventional commit guidelines';
+    const suggestions =
+      error.suggestions.length > 0
+        ? error.suggestions.join('\n   ')
+        : 'Follow conventional commit guidelines';
     return {
       message: `Commit validation failed: ${error.message}`,
       suggestion: `Fix the commit message:\n   ${suggestions}`
@@ -83,7 +87,7 @@ export async function handleAsync<T>(fn: () => Promise<T>): Promise<T> {
 
     // Display user-friendly error message
     console.error(chalk.red('💥 Error: ') + chalk.white(message));
-    
+
     if (suggestion) {
       console.error(chalk.yellow('💡 Suggestion: ') + chalk.gray(suggestion));
     }
@@ -108,7 +112,7 @@ export function handleSync<T>(fn: () => T): T {
     const { message, suggestion } = getErrorMessage(error);
 
     console.error(chalk.red('💥 Error: ') + chalk.white(message));
-    
+
     if (suggestion) {
       console.error(chalk.yellow('💡 Suggestion: ') + chalk.gray(suggestion));
     }
@@ -121,13 +125,15 @@ export function handleSync<T>(fn: () => T): T {
  * Check if an error is an AI-related error
  */
 export function isAIError(error: unknown): error is AIError {
-  return error instanceof ClaudeRateLimitError ||
-         error instanceof ClaudeValidationError ||
-         error instanceof OpenAIError ||
-         error instanceof NetworkTimeoutError ||
-         error instanceof GitRepoError ||
-         error instanceof InvalidConfigError ||
-         error instanceof CommitValidationError;
+  return (
+    error instanceof ClaudeRateLimitError ||
+    error instanceof ClaudeValidationError ||
+    error instanceof OpenAIError ||
+    error instanceof NetworkTimeoutError ||
+    error instanceof GitRepoError ||
+    error instanceof InvalidConfigError ||
+    error instanceof CommitValidationError
+  );
 }
 
 /**
@@ -137,7 +143,10 @@ export function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 30000): 
   return Promise.race([
     promise,
     new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new NetworkTimeoutError(`Request timed out after ${timeoutMs}ms`)), timeoutMs);
+      setTimeout(
+        () => reject(new NetworkTimeoutError(`Request timed out after ${timeoutMs}ms`)),
+        timeoutMs
+      );
     })
   ]);
 }

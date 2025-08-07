@@ -11,7 +11,7 @@ export class GitUtils {
   constructor(workingDir?: string) {
     this.rootDir = workingDir || globalThis.process?.cwd?.() || '.';
   }
-  
+
   public async getGit(): Promise<SimpleGit> {
     if (!this.git) {
       const { default: simpleGit } = await lazy(() => import('simple-git'));
@@ -38,7 +38,7 @@ export class GitUtils {
   async getStagedChanges(): Promise<StagedChanges> {
     const status = await this.getStatus();
     const stagedFiles = [...status.staged, ...status.renamed.map((r: { to: string }) => r.to)];
-    
+
     return {
       files: stagedFiles,
       summary: this.formatChangesSummary(status),
@@ -93,21 +93,21 @@ export class GitUtils {
       if (options.dryRun) {
         const status = await this.getStatus();
         const unstagedFiles = [...status.modified, ...status.not_added, ...status.deleted];
-        
+
         if (unstagedFiles.length === 0) {
           return '[DRY RUN] No files to stage and commit';
         }
-        
+
         return `[DRY RUN] Would stage ${unstagedFiles.length} file(s) and commit with message: "${message}"`;
       }
 
       await this.stageAll();
-      
+
       const status = await this.getStatus();
       if (status.staged.length === 0) {
         throw new Error('No staged changes to commit. Make sure you have changes to commit.');
       }
-      
+
       const git = await this.getGit();
       const result = await git.commit(message);
       return `Successfully committed: ${result.commit} (${status.staged.length} file(s) staged)`;
@@ -142,7 +142,7 @@ export class GitUtils {
 
   private formatChangesSummary(status: StatusResult): string {
     const changes: string[] = [];
-    
+
     if (status.created.length > 0) {
       changes.push(`${status.created.length} created`);
     }
@@ -162,7 +162,7 @@ export class GitUtils {
 
 export async function createGitRepository(workingDir?: string): Promise<GitRepository> {
   const gitUtils = new GitUtils(workingDir);
-  
+
   if (!(await gitUtils.isGitRepository())) {
     throw new Error('Not a git repository');
   }
@@ -173,7 +173,10 @@ export async function createGitRepository(workingDir?: string): Promise<GitRepos
   };
 }
 
-export async function stageAllAndCommit(message: string, options: { dryRun?: boolean; workingDir?: string } = {}): Promise<string> {
+export async function stageAllAndCommit(
+  message: string,
+  options: { dryRun?: boolean; workingDir?: string } = {}
+): Promise<string> {
   const gitUtils = new GitUtils(options.workingDir);
   const commitOptions = options.dryRun !== undefined ? { dryRun: options.dryRun } : {};
   return await gitUtils.stageAllAndCommit(message, commitOptions);
@@ -183,14 +186,14 @@ export function formatFilePath(filePath: string, maxLength = 50): string {
   if (filePath.length <= maxLength) {
     return filePath;
   }
-  
+
   const parts = filePath.split('/');
   if (parts.length <= 2) {
     return filePath;
   }
-  
+
   const fileName = parts[parts.length - 1];
   const dirName = parts[parts.length - 2];
-  
+
   return `.../${dirName}/${fileName}`;
 }

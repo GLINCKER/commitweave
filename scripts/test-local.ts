@@ -8,11 +8,7 @@ console.log('🧪 Testing CommitBuilder...\n');
 // Test sample commit
 const builder = new CommitBuilder(defaultConfig);
 
-const testCommit = builder
-  .setType('feat')
-  .setScope('core')
-  .setSubject('add auth handler')
-  .build();
+const testCommit = builder.setType('feat').setScope('core').setSubject('add auth handler').build();
 
 console.log('📋 Sample Commit Message:');
 console.log('─'.repeat(40));
@@ -27,7 +23,9 @@ const complexCommit = builder
   .setType('feat')
   .setScope('api')
   .setSubject('implement new auth system')
-  .setBody('This introduces a new authentication system that supports\nmultiple providers and JWT tokens.')
+  .setBody(
+    'This introduces a new authentication system that supports\nmultiple providers and JWT tokens.'
+  )
   .setBreakingChange(true)
   .build();
 

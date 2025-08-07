@@ -59,7 +59,7 @@ export function parseFlags(argv: string[] = process.argv.slice(2)): ParsedFlags 
         break;
       case '--debug-perf':
         flags.debugPerf = true;
-        process.env.COMMITWEAVE_DEBUG_PERF = "1";
+        process.env.COMMITWEAVE_DEBUG_PERF = '1';
         break;
       case '--ai':
       case 'ai':
@@ -144,7 +144,7 @@ export function parseFlags(argv: string[] = process.argv.slice(2)): ParsedFlags 
  */
 export function shouldUseFancyUI(flags: ParsedFlags, config?: any): boolean {
   // Fancy UI disabled by --plain flag or if CLI_FANCY is explicitly disabled
-  if (flags.plain || process.env.CLI_FANCY === "0") {
+  if (flags.plain || process.env.CLI_FANCY === '0') {
     return false;
   }
 
@@ -154,7 +154,7 @@ export function shouldUseFancyUI(flags: ParsedFlags, config?: any): boolean {
   }
 
   // Enable fancy UI by default, unless explicitly disabled
-  return process.env.CLI_FANCY !== "0";
+  return process.env.CLI_FANCY !== '0';
 }
 
 /**
@@ -163,9 +163,18 @@ export function shouldUseFancyUI(flags: ParsedFlags, config?: any): boolean {
  * @returns True if should run in interactive mode
  */
 export function isInteractiveMode(flags: ParsedFlags): boolean {
-  return !flags.ai && !flags.init && !flags.check && !flags.help && 
-         !flags.version && !flags.export && !flags.import && 
-         !flags.list && !flags.reset && !flags.doctor;
+  return (
+    !flags.ai &&
+    !flags.init &&
+    !flags.check &&
+    !flags.help &&
+    !flags.version &&
+    !flags.export &&
+    !flags.import &&
+    !flags.list &&
+    !flags.reset &&
+    !flags.doctor
+  );
 }
 
 /**
