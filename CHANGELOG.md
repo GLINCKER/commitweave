@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2025-08-07
+
+### 🎉 **STABLE RELEASE** - Complete Open Source Project Structure
+
 ### Added
 - **VS Code Extension**: Initial extension with three core commands & settings panel
   - "CommitWeave: Create Commit" - Launch interactive CLI in integrated terminal
