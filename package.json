@@ -35,7 +35,20 @@
     "start": "node ./dist/bin.js",
     "test": "npx tsx scripts/test-local.ts && npx tsx scripts/test-cli-functions.ts && npx tsx tests/anthropic.spec.ts && npx tsx tests/config.spec.ts",
     "test:perf": "tsx tests/perf.spec.ts",
-    "setup:branding": "node scripts/setup-branding.js"
+    "setup:branding": "node scripts/setup-branding.js",
+    "bump:patch": "tsx scripts/bump-version.ts patch",
+    "bump:minor": "tsx scripts/bump-version.ts minor", 
+    "bump:major": "tsx scripts/bump-version.ts major",
+    "bump:prerelease": "tsx scripts/bump-version.ts prerelease",
+    "bump:beta": "tsx scripts/bump-version.ts prerelease --preid beta",
+    "bump:alpha": "tsx scripts/bump-version.ts prerelease --preid alpha",
+    "release:patch": "tsx scripts/bump-version.ts patch --push",
+    "release:minor": "tsx scripts/bump-version.ts minor --push",
+    "release:major": "tsx scripts/bump-version.ts major --push",
+    "release:beta": "tsx scripts/bump-version.ts prerelease --preid beta --push",
+    "lint": "echo 'Linting not configured yet'",
+    "format:check": "echo 'Prettier check not configured yet'",
+    "type-check": "tsc --noEmit"
   },
   "keywords": [
     "git",
