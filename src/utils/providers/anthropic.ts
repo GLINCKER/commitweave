@@ -113,9 +113,7 @@ Respond with JSON in this format:
       };
     } catch (error) {
       // Re-throw specific error types
-      const { ClaudeRateLimitError, ClaudeValidationError } = await lazy(
-        () => import('../../types/ai.js')
-      );
+      const { ClaudeRateLimitError, ClaudeValidationError } = await lazy(() => import('../../types/ai.js'));
       if (error instanceof ClaudeRateLimitError || error instanceof ClaudeValidationError) {
         throw error;
       }
