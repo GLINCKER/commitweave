@@ -7,7 +7,7 @@ This file provides comprehensive context for Claude AI sessions working on the C
 **CommitWeave** is a modern CLI tool for creating smart, structured, and beautiful git commit messages with emoji support, conventional commit rules, AI-powered summaries, and built-in hooks.
 
 ### Key Details
-- **Version**: 0.1.0-beta.4
+- **Version**: 1.0.3
 - **Package**: @typeweaver/commitweave
 - **Language**: TypeScript (100%)
 - **Runtime**: Node.js >= 18.0.0

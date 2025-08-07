@@ -46,7 +46,7 @@ async function main() {
   // Handle version flag quickly for benchmarks
   if (flags.version) {
     const pkg = JSON.parse(await readFile(join(process.cwd(), 'package.json'), 'utf-8'));
-    console.log(pkg.version || '0.1.0-beta.4');
+    console.log(pkg.version || '1.0.3');
     maybeReport();
     return;
   }
@@ -389,11 +389,21 @@ async function handleAICommitCommand(useFancyUI: boolean = false) {
 
     // Load configuration
     const config = await loadConfig();
-    if (!config.ai) {
-      console.log(chalk.yellow('⚠️  AI configuration not found'));
-      console.log(chalk.gray('   Let\'s set that up for you!'));
-      console.log(chalk.cyan('   Run: ') + chalk.white('commitweave init') + chalk.gray(' to configure AI'));
-      return;
+    
+    // Check if AI is configured, fall back to mock if not
+    let aiConfig = config.ai;
+    if (!aiConfig || (!aiConfig.apiKey && aiConfig.provider !== 'mock')) {
+      console.log(chalk.yellow('⚠️  AI API key not configured, falling back to mock AI provider'));
+      console.log(chalk.gray('   This will generate placeholder commit messages for demonstration'));
+      console.log(chalk.cyan('   💡 To enable real AI: configure your API key in ') + chalk.white('glinr-commit.json'));
+      console.log('');
+      
+      // Use mock provider configuration
+      aiConfig = {
+        provider: 'mock',
+        apiKey: '',
+        model: 'mock'
+      };
     }
 
     if (useFancyUI) {
@@ -441,7 +451,7 @@ async function handleAICommitCommand(useFancyUI: boolean = false) {
     }
     
     const { generateAISummary } = await lazy(() => import('../src/utils/ai.js'));
-    const { subject, body } = await generateAISummary(diff, config.ai);
+    const { subject, body } = await generateAISummary(diff, aiConfig!);
 
     // Show preview
     console.log(chalk.green('\n✨ AI-generated commit message:'));

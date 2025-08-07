@@ -36,7 +36,7 @@ CommitWeave is a modern CLI tool and VS Code extension that transforms your git 
 ### Step 1: Install
 ```bash
 # CLI Tool
-npm install -g @typeweaver/commitweave@beta
+npm install -g @typeweaver/commitweave
 
 # VS Code Extension
 # Search "CommitWeave" in VS Code Extensions (Publisher: glincker)
