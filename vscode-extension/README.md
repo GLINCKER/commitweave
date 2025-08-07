@@ -14,32 +14,60 @@ Smart, structured, and beautiful git commits with AI assistance - directly from 
 
 ### 🚀 Core Commands
 
-- **CommitWeave: Create Commit** - Launch the interactive commit builder in the integrated terminal
+- **CommitWeave: Create Commit** - Launch the interactive CLI-style commit builder in the integrated terminal
 - **CommitWeave: AI Commit** - Generate AI-powered commit messages based on your staged changes  
-- **CommitWeave: Configure** - Open the settings panel to customize your preferences
+- **CommitWeave: Quick Commit** - Fast conventional commits with native VS Code UI and real-time validation
+- **CommitWeave: Validate Commit** - Validate your last commit message against conventional commit standards
+- **CommitWeave: Configure** - Open the enhanced settings panel with tabbed interface
 
-### ⚙️ Settings Panel
+### ⚙️ Enhanced Settings Panel
 
-The configuration webview provides:
+The tabbed configuration webview provides:
 
+**Settings Tab:**
 - **Repository Status**: Real-time monitoring of git repository, staged files, and CLI availability
 - **Emoji Settings**: Enable/disable emoji integration in commit messages
 - **AI Provider**: Choose between OpenAI, Anthropic, or mock providers
-- **Dark Mode**: Automatically adapts to VS Code's theme
+- **Dark Mode**: Automatically adapts to VS Code's theme with smooth animations
+
+**Commit History Tab:**
+- **Recent Commits**: View last 10 commits with validation status indicators
+- **Validation Status**: See which commits follow conventional commit standards
+- **Quick Actions**: Refresh history and validate latest commit
+
+**Templates Tab:**
+- **Quick Templates**: Pre-built commit message templates with variable substitution
+- **Template Types**: Common patterns for features, fixes, docs, refactoring, and tests
+- **Direct Integration**: Click templates to trigger Quick Commit workflow
 
 ### 🤖 AI Integration
 
 Supports multiple AI providers:
-- OpenAI GPT models for intelligent commit message generation
-- Anthropic Claude models for detailed commit analysis
-- Mock provider for testing and development
+- **OpenAI GPT models** for intelligent commit message generation
+- **Anthropic Claude models** for detailed commit analysis
+- **Mock provider** for testing and development
+
+### ⚡ Quick Commit Workflow
+
+Streamlined commit process with native VS Code UI:
+- **Type Selection**: Choose from conventional commit types with emoji support
+- **Scope Support**: Optional scope specification for better organization
+- **Template System**: Use templates or write custom commit messages
+- **Real-time Validation**: Instant feedback on commit message quality
+- **Source Control Integration**: Quick commit button directly in Source Control panel
 
 ## Quick Start
 
+### Method 1: Quick Commit (Recommended)
 1. **Install the Extension**: Search for "CommitWeave" in the VS Code marketplace
-2. **Install CLI**: Run `npm install -g @typeweaver/commitweave` 
-3. **Stage Changes**: Use `git add .` or stage files in VS Code's Source Control panel
-4. **Create Commit**: Open Command Palette (`Ctrl+Shift+P`) → "CommitWeave: Create Commit"
+2. **Stage Changes**: Use VS Code's Source Control panel to stage files
+3. **Quick Commit**: Click "⚡ Quick Commit" in Source Control panel OR Command Palette → "CommitWeave: Quick Commit"
+4. **Follow Prompts**: Select commit type, add scope/message, and commit with validation
+
+### Method 2: CLI Integration
+1. **Install CLI**: Run `npm install -g @typeweaver/commitweave`
+2. **Stage Changes**: Use `git add .` or stage files in VS Code's Source Control panel
+3. **Create Commit**: Command Palette (`Ctrl+Shift+P`) → "CommitWeave: Create Commit"
 
 ## Requirements
 
@@ -56,9 +84,18 @@ This extension contributes the following settings:
 
 ## Commands
 
-- `commitweave.create`: Launch interactive commit creation
+- `commitweave.create`: Launch interactive CLI-style commit creation
 - `commitweave.ai`: Generate AI-powered commit message
-- `commitweave.configure`: Open settings panel
+- `commitweave.quickCommit`: Fast conventional commits with native VS Code UI
+- `commitweave.validateCommit`: Validate last commit message
+- `commitweave.configure`: Open enhanced tabbed settings panel
+
+### Command Palette Access
+- **CommitWeave: Create Commit** → Full CLI experience in integrated terminal
+- **CommitWeave: AI Commit** → AI-powered commit generation
+- **CommitWeave: Quick Commit** → Native VS Code commit workflow
+- **CommitWeave: Validate Commit** → Check last commit against standards
+- **CommitWeave: Configure** → Open settings with tabs for Settings/History/Templates
 
 ## Installation Methods
 

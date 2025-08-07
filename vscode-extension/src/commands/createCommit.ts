@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { spawn } from 'child_process';
+import { getWorkspaceFolder, initializeGitRepo, executeCommitWeave, getGitStatus } from '../utils/gitUtils';
 
 /**
  * Register the Create Commit command
@@ -9,7 +9,7 @@ export function registerCreateCommitCommand(context: vscode.ExtensionContext) {
     try {
       await executeCreateCommit();
     } catch (error) {
-      vscode.window.showErrorMessage(`CommitWeave: ${error}`);
+      vscode.window.showErrorMessage(`CommitWeave: ${error instanceof Error ? error.message : String(error)}`);
     }
   });
 
@@ -19,15 +19,17 @@ export function registerCreateCommitCommand(context: vscode.ExtensionContext) {
 /**
  * Execute the create commit command using the CLI
  */
-async function executeCreateCommit() {
+export async function executeCreateCommit() {
   // Get the workspace folder
   const workspaceFolder = getWorkspaceFolder();
   if (!workspaceFolder) {
     throw new Error('No workspace folder found. Please open a project folder.');
   }
 
-  // Check if we're in a git repository
-  if (!(await isGitRepository(workspaceFolder))) {
+  // Get git status
+  const gitStatus = await getGitStatus(workspaceFolder);
+  
+  if (!gitStatus.isRepository) {
     const selection = await vscode.window.showErrorMessage(
       'This is not a git repository. Would you like to initialize one?',
       'Initialize Git',
@@ -35,7 +37,7 @@ async function executeCreateCommit() {
     );
     
     if (selection === 'Initialize Git') {
-      await executeCommand('git', ['init'], workspaceFolder);
+      await initializeGitRepo(workspaceFolder);
       vscode.window.showInformationMessage('Git repository initialized successfully!');
     } else {
       return;
@@ -45,113 +47,26 @@ async function executeCreateCommit() {
   // Create output channel for CommitWeave
   const outputChannel = vscode.window.createOutputChannel('CommitWeave');
   outputChannel.show(true);
+  
+  // Show status info
+  outputChannel.appendLine('🧶 CommitWeave - Interactive Commit Creator');
+  outputChannel.appendLine('=====================================');
+  if (gitStatus.isRepository) {
+    outputChannel.appendLine(`📂 Repository: ${workspaceFolder}`);
+    outputChannel.appendLine(`🌿 Branch: ${gitStatus.branch || 'unknown'}`);
+    outputChannel.appendLine(`📋 Staged files: ${gitStatus.stagedFiles}`);
+    outputChannel.appendLine(`📝 Modified files: ${gitStatus.modifiedFiles}`);
+    outputChannel.appendLine(`❓ Untracked files: ${gitStatus.untrackedFiles}`);
+    outputChannel.appendLine('');
+  }
 
   try {
-    // Try to run commitweave
+    // Run commitweave CLI
     await executeCommitWeave([], workspaceFolder, outputChannel);
     vscode.window.showInformationMessage('CommitWeave: Commit creation completed!');
   } catch (error: any) {
-    if (error.code === 'ENOENT') {
-      // CommitWeave CLI not found
-      const selection = await vscode.window.showErrorMessage(
-        'CommitWeave CLI not found. Please install it globally.',
-        'Install Instructions',
-        'Use Local Version'
-      );
-
-      if (selection === 'Install Instructions') {
-        vscode.env.openExternal(vscode.Uri.parse('https://github.com/GLINCKER/commitweave#installation'));
-      } else if (selection === 'Use Local Version') {
-        // Try with npx
-        try {
-          await executeCommand('npx', ['@typeweaver/commitweave'], workspaceFolder, outputChannel);
-          vscode.window.showInformationMessage('CommitWeave: Commit creation completed!');
-        } catch (npxError) {
-          vscode.window.showErrorMessage('Failed to run CommitWeave with npx. Please install globally: npm i -g @typeweaver/commitweave');
-        }
-      }
-    } else {
-      throw error;
-    }
+    outputChannel.appendLine(`❌ Error: ${error.message}`);
+    throw error;
   }
 }
 
-/**
- * Execute CommitWeave CLI with given arguments
- */
-async function executeCommitWeave(args: string[], cwd: string, outputChannel?: vscode.OutputChannel): Promise<void> {
-  return executeCommand('commitweave', args, cwd, outputChannel);
-}
-
-/**
- * Execute a command in the integrated terminal or output channel
- */
-async function executeCommand(
-  command: string, 
-  args: string[], 
-  cwd: string, 
-  outputChannel?: vscode.OutputChannel
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (outputChannel) {
-      outputChannel.appendLine(`> ${command} ${args.join(' ')}`);
-    }
-
-    const child = spawn(command, args, {
-      cwd,
-      stdio: ['inherit', 'pipe', 'pipe']
-    });
-
-    child.stdout?.on('data', (data) => {
-      const output = data.toString();
-      if (outputChannel) {
-        outputChannel.append(output);
-      }
-    });
-
-    child.stderr?.on('data', (data) => {
-      const output = data.toString();
-      if (outputChannel) {
-        outputChannel.append(output);
-      }
-    });
-
-    child.on('close', (code) => {
-      if (code === 0) {
-        if (outputChannel) {
-          outputChannel.appendLine('✅ Command completed successfully');
-        }
-        resolve();
-      } else {
-        reject(new Error(`Command failed with exit code ${code}`));
-      }
-    });
-
-    child.on('error', (error) => {
-      reject(error);
-    });
-  });
-}
-
-/**
- * Get the current workspace folder
- */
-function getWorkspaceFolder(): string | undefined {
-  const workspaceFolders = vscode.workspace.workspaceFolders;
-  if (!workspaceFolders || workspaceFolders.length === 0) {
-    return undefined;
-  }
-  return workspaceFolders[0].uri.fsPath;
-}
-
-/**
- * Check if the current directory is a git repository
- */
-async function isGitRepository(cwd: string): Promise<boolean> {
-  try {
-    await executeCommand('git', ['rev-parse', '--git-dir'], cwd);
-    return true;
-  } catch {
-    return false;
-  }
-}

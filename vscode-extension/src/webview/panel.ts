@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
+import { spawn } from 'child_process';
+import { validateCommitMessage } from '../utils/commitValidator';
 
 /**
  * Settings panel webview provider
@@ -61,7 +63,7 @@ export class SettingsPanel {
 
     // Handle messages from the webview
     this._panel.webview.onDidReceiveMessage(
-      (message) => {
+      async (message) => {
         switch (message.command) {
           case 'saveSettings':
             this._saveSettings(message.settings);
@@ -71,6 +73,30 @@ export class SettingsPanel {
             return;
           case 'checkStatus':
             this._checkStatus();
+            return;
+          case 'getCommitHistory':
+            await this._getCommitHistory();
+            return;
+          case 'validateCommit':
+            vscode.commands.executeCommand('commitweave.validateCommit');
+            return;
+          case 'useTemplate':
+            await this._useTemplate(message.type, message.template);
+            return;
+          case 'openQuickCommit':
+            vscode.commands.executeCommand('commitweave.quickCommit');
+            return;
+          case 'openFullCLI':
+            vscode.commands.executeCommand('commitweave.create');
+            return;
+          case 'exportConfig':
+            await this._exportConfig();
+            return;
+          case 'importConfig':
+            await this._importConfig();
+            return;
+          case 'resetToDefaults':
+            await this._resetToDefaults();
             return;
         }
       },
@@ -330,12 +356,74 @@ export class SettingsPanel {
 
   private async _saveSettings(settings: any) {
     try {
+      const workspaceFolder = this._getWorkspaceFolder();
+      if (!workspaceFolder) {
+        vscode.window.showErrorMessage('No workspace folder found to save CommitWeave configuration');
+        return;
+      }
+
+      // Update VS Code configuration
       const config = vscode.workspace.getConfiguration('commitweave');
-      
       await config.update('emojiEnabled', settings.emojiEnabled, vscode.ConfigurationTarget.Global);
       await config.update('aiProvider', settings.aiProvider, vscode.ConfigurationTarget.Global);
-      
-      vscode.window.showInformationMessage('CommitWeave settings saved successfully!');
+
+      // Also try to update CommitWeave config file if it exists
+      try {
+        const configPath = require('path').join(workspaceFolder, 'glinr-commit.json');
+        const fs = require('fs').promises;
+        
+        let commitWeaveConfig: any = {};
+        try {
+          const configContent = await fs.readFile(configPath, 'utf8');
+          commitWeaveConfig = JSON.parse(configContent);
+        } catch (error) {
+          // Config file doesn't exist, create new one
+          commitWeaveConfig = {
+            version: "1.0",
+            commitTypes: [
+              { type: "feat", emoji: "✨", description: "A new feature" },
+              { type: "fix", emoji: "🐛", description: "A bug fix" },
+              { type: "docs", emoji: "📚", description: "Documentation only changes" },
+              { type: "style", emoji: "💎", description: "Changes that do not affect the meaning of the code" },
+              { type: "refactor", emoji: "📦", description: "A code change that neither fixes a bug nor adds a feature" },
+              { type: "perf", emoji: "🚀", description: "A code change that improves performance" },
+              { type: "test", emoji: "🚨", description: "Adding missing tests or correcting existing tests" },
+              { type: "build", emoji: "🛠", description: "Changes that affect the build system or external dependencies" },
+              { type: "ci", emoji: "⚙️", description: "Changes to our CI configuration files and scripts" },
+              { type: "chore", emoji: "♻️", description: "Other changes that don't modify src or test files" },
+              { type: "revert", emoji: "🗑", description: "Reverts a previous commit" }
+            ],
+            conventionalCommits: true,
+            maxSubjectLength: 50,
+            maxBodyLength: 72
+          };
+        }
+
+        // Update settings
+        commitWeaveConfig.emojiEnabled = settings.emojiEnabled;
+        commitWeaveConfig.conventionalCommits = settings.conventionalCommits;
+        commitWeaveConfig.maxSubjectLength = settings.maxSubjectLength;
+        
+        // Handle AI provider configuration
+        if (settings.aiProvider && settings.aiProvider !== 'mock') {
+          if (!commitWeaveConfig.ai) {
+            commitWeaveConfig.ai = {};
+          }
+          commitWeaveConfig.ai.provider = settings.aiProvider;
+          
+          // If API key is provided, save it (but warn about security)
+          if (settings.apiKey && settings.apiKey.trim()) {
+            commitWeaveConfig.ai.apiKey = settings.apiKey.trim();
+            vscode.window.showWarningMessage('API key saved to local config. Keep your glinr-commit.json file secure and avoid committing it to version control.');
+          }
+        }
+
+        await fs.writeFile(configPath, JSON.stringify(commitWeaveConfig, null, 2));
+        vscode.window.showInformationMessage('CommitWeave settings saved to local config file!');
+      } catch (error) {
+        // Fallback: just show that VS Code settings were saved
+        vscode.window.showInformationMessage('CommitWeave VS Code settings saved! (Note: Local config file not updated)');
+      }
       
       this._panel.webview.postMessage({
         command: 'settingsSaved'
@@ -345,18 +433,66 @@ export class SettingsPanel {
     }
   }
 
-  private _loadSettings() {
-    const config = vscode.workspace.getConfiguration('commitweave');
-    
-    const settings = {
-      emojiEnabled: config.get('emojiEnabled', true),
-      aiProvider: config.get('aiProvider', 'openai')
-    };
-    
-    this._panel.webview.postMessage({
-      command: 'currentSettings',
-      settings: settings
-    });
+  private async _loadSettings() {
+    try {
+      const workspaceFolder = this._getWorkspaceFolder();
+      let settings = {
+        emojiEnabled: true,
+        aiProvider: 'openai',
+        apiKey: '',
+        conventionalCommits: true,
+        maxSubjectLength: 50
+      };
+
+      // First load from VS Code configuration
+      const config = vscode.workspace.getConfiguration('commitweave');
+      settings.emojiEnabled = config.get('emojiEnabled', true);
+      settings.aiProvider = config.get('aiProvider', 'openai');
+
+      // Try to load from CommitWeave config file if it exists
+      if (workspaceFolder) {
+        try {
+          const configPath = require('path').join(workspaceFolder, 'glinr-commit.json');
+          const fs = require('fs').promises;
+          const configContent = await fs.readFile(configPath, 'utf8');
+          const commitWeaveConfig = JSON.parse(configContent);
+          
+          // Override with CommitWeave config values
+          if (typeof commitWeaveConfig.emojiEnabled === 'boolean') {
+            settings.emojiEnabled = commitWeaveConfig.emojiEnabled;
+          }
+          if (typeof commitWeaveConfig.conventionalCommits === 'boolean') {
+            settings.conventionalCommits = commitWeaveConfig.conventionalCommits;
+          }
+          if (typeof commitWeaveConfig.maxSubjectLength === 'number') {
+            settings.maxSubjectLength = commitWeaveConfig.maxSubjectLength;
+          }
+          if (commitWeaveConfig.ai && commitWeaveConfig.ai.provider) {
+            settings.aiProvider = commitWeaveConfig.ai.provider;
+          }
+          // Don't load API key for security reasons
+        } catch (error) {
+          // Config file doesn't exist or is invalid, use VS Code settings
+        }
+      }
+      
+      this._panel.webview.postMessage({
+        command: 'currentSettings',
+        settings: settings
+      });
+    } catch (error) {
+      // Fallback to default settings
+      this._panel.webview.postMessage({
+        command: 'currentSettings',
+        settings: {
+          emojiEnabled: true,
+          aiProvider: 'openai',
+          apiKey: '',
+          conventionalCommits: true,
+          maxSubjectLength: 50
+        }
+      });
+    }
   }
 
   private async _checkStatus() {
@@ -472,6 +608,358 @@ export class SettingsPanel {
       });
     });
   }
+
+  /**
+   * Get commit history and send to webview
+   */
+  private async _getCommitHistory(): Promise<void> {
+    try {
+      const workspaceFolder = this._getWorkspaceFolder();
+      if (!workspaceFolder) return;
+
+      const commits = await this._fetchCommitHistory(workspaceFolder);
+      
+      // Validate each commit message
+      const validatedCommits = commits.map(commit => ({
+        ...commit,
+        isValid: validateCommitMessage(commit.message).isValid
+      }));
+
+      this._panel.webview.postMessage({
+        command: 'updateCommitHistory',
+        commits: validatedCommits
+      });
+    } catch (error) {
+      console.error('Failed to get commit history:', error);
+      this._panel.webview.postMessage({
+        command: 'updateCommitHistory',
+        commits: []
+      });
+    }
+  }
+
+  /**
+   * Fetch commit history from git
+   */
+  private async _fetchCommitHistory(cwd: string): Promise<any[]> {
+    return new Promise((resolve, reject) => {
+      const child = spawn('git', [
+        'log', 
+        '--oneline', 
+        '--format=%H|%s|%an|%ad', 
+        '--date=relative',
+        '-10' // Last 10 commits
+      ], { cwd });
+      
+      let output = '';
+      
+      child.stdout?.on('data', (data) => {
+        output += data.toString();
+      });
+      
+      child.on('close', (code) => {
+        if (code === 0) {
+          const commits = output.trim().split('\n')
+            .filter(line => line.length > 0)
+            .map(line => {
+              const [hash, message, author, date] = line.split('|');
+              return {
+                hash: hash.substring(0, 8),
+                message: message || 'No message',
+                author: author || 'Unknown',
+                date: date || 'Unknown'
+              };
+            });
+          resolve(commits);
+        } else {
+          reject(new Error(`Git command failed with exit code ${code}`));
+        }
+      });
+      
+      child.on('error', reject);
+    });
+  }
+
+  /**
+   * Use a template for quick commit
+   */
+  private async _useTemplate(_type: string, _template: string): Promise<void> {
+    // For now, just trigger the quick commit command
+    // The template logic is already in the quick commit command
+    vscode.commands.executeCommand('commitweave.quickCommit');
+  }
+
+  /**
+   * Export CommitWeave configuration
+   */
+  private async _exportConfig(): Promise<void> {
+    try {
+      const workspaceFolder = this._getWorkspaceFolder();
+      if (!workspaceFolder) {
+        vscode.window.showErrorMessage('No workspace folder found');
+        return;
+      }
+
+      // Try to use the CLI export command first
+      try {
+        const { spawn } = await import('child_process');
+        const outputChannel = vscode.window.createOutputChannel('CommitWeave Export');
+        
+        outputChannel.show();
+        outputChannel.appendLine('Exporting CommitWeave configuration...');
+        
+        const child = spawn('commitweave', ['export'], {
+          cwd: workspaceFolder
+        });
+
+        let output = '';
+        child.stdout?.on('data', (data) => {
+          output += data.toString();
+          outputChannel.append(data.toString());
+        });
+
+        child.stderr?.on('data', (data) => {
+          outputChannel.append(data.toString());
+        });
+
+        child.on('close', async (code) => {
+          if (code === 0) {
+            outputChannel.appendLine('✅ Configuration exported successfully!');
+            
+            // Parse the JSON from output and offer to save to file
+            const lines = output.split('\n');
+            const jsonStart = lines.findIndex(line => line.trim().startsWith('{'));
+            if (jsonStart !== -1) {
+              const jsonOutput = lines.slice(jsonStart).join('\n').trim();
+              
+              const saveUri = await vscode.window.showSaveDialog({
+                defaultUri: vscode.Uri.joinPath(vscode.Uri.file(workspaceFolder), 'commitweave-config.json'),
+                filters: {
+                  'JSON files': ['json']
+                }
+              });
+
+              if (saveUri) {
+                await vscode.workspace.fs.writeFile(saveUri, Buffer.from(jsonOutput, 'utf8'));
+                vscode.window.showInformationMessage(`Configuration exported to ${saveUri.fsPath}`);
+              }
+            }
+          } else {
+            outputChannel.appendLine(`❌ Export failed with code ${code}`);
+          }
+        });
+      } catch (error) {
+        // Fallback: read config file directly
+        const configPath = require('path').join(workspaceFolder, 'glinr-commit.json');
+        const fs = require('fs').promises;
+        
+        try {
+          const configContent = await fs.readFile(configPath, 'utf8');
+          
+          const saveUri = await vscode.window.showSaveDialog({
+            defaultUri: vscode.Uri.joinPath(vscode.Uri.file(workspaceFolder), 'commitweave-config-backup.json'),
+            filters: {
+              'JSON files': ['json']
+            }
+          });
+
+          if (saveUri) {
+            await vscode.workspace.fs.writeFile(saveUri, Buffer.from(configContent, 'utf8'));
+            vscode.window.showInformationMessage(`Configuration exported to ${saveUri.fsPath}`);
+          }
+        } catch (readError) {
+          vscode.window.showErrorMessage('No CommitWeave configuration found to export');
+        }
+      }
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to export configuration: ${error}`);
+    }
+  }
+
+  /**
+   * Import CommitWeave configuration
+   */
+  private async _importConfig(): Promise<void> {
+    try {
+      const workspaceFolder = this._getWorkspaceFolder();
+      if (!workspaceFolder) {
+        vscode.window.showErrorMessage('No workspace folder found');
+        return;
+      }
+
+      // Show file picker
+      const fileUris = await vscode.window.showOpenDialog({
+        canSelectMany: false,
+        filters: {
+          'JSON files': ['json'],
+          'All files': ['*']
+        },
+        openLabel: 'Import Configuration'
+      });
+
+      if (!fileUris || fileUris.length === 0) {
+        return;
+      }
+
+      const configUri = fileUris[0];
+      
+      try {
+        // Read the selected config file
+        const configData = await vscode.workspace.fs.readFile(configUri);
+        const configContent = Buffer.from(configData).toString('utf8');
+        const importedConfig = JSON.parse(configContent);
+
+        // Validate basic structure
+        if (!importedConfig.version || !importedConfig.commitTypes) {
+          vscode.window.showErrorMessage('Invalid CommitWeave configuration file');
+          return;
+        }
+
+        // Try to use CLI import command first
+        try {
+          const { spawn } = await import('child_process');
+          const outputChannel = vscode.window.createOutputChannel('CommitWeave Import');
+          
+          outputChannel.show();
+          outputChannel.appendLine(`Importing CommitWeave configuration from ${configUri.fsPath}...`);
+          
+          const child = spawn('commitweave', ['import', configUri.fsPath, '--yes'], {
+            cwd: workspaceFolder
+          });
+
+          child.stdout?.on('data', (data) => {
+            outputChannel.append(data.toString());
+          });
+
+          child.stderr?.on('data', (data) => {
+            outputChannel.append(data.toString());
+          });
+
+          child.on('close', (code) => {
+            if (code === 0) {
+              outputChannel.appendLine('✅ Configuration imported successfully!');
+              vscode.window.showInformationMessage('CommitWeave configuration imported successfully!');
+              this._loadSettings(); // Refresh the UI
+            } else {
+              outputChannel.appendLine(`❌ Import failed with code ${code}`);
+              this._fallbackImport(importedConfig, workspaceFolder);
+            }
+          });
+        } catch (error) {
+          // Fallback: direct file copy
+          this._fallbackImport(importedConfig, workspaceFolder);
+        }
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to read configuration file: ${error}`);
+      }
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to import configuration: ${error}`);
+    }
+  }
+
+  /**
+   * Fallback import method that writes config directly
+   */
+  private async _fallbackImport(importedConfig: any, workspaceFolder: string): Promise<void> {
+    try {
+      const configPath = require('path').join(workspaceFolder, 'glinr-commit.json');
+      const fs = require('fs').promises;
+      
+      await fs.writeFile(configPath, JSON.stringify(importedConfig, null, 2));
+      vscode.window.showInformationMessage('CommitWeave configuration imported successfully!');
+      this._loadSettings(); // Refresh the UI
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to write configuration file: ${error}`);
+    }
+  }
+
+  /**
+   * Reset configuration to defaults
+   */
+  private async _resetToDefaults(): Promise<void> {
+    try {
+      const workspaceFolder = this._getWorkspaceFolder();
+      if (!workspaceFolder) {
+        vscode.window.showErrorMessage('No workspace folder found');
+        return;
+      }
+
+      // Try to use CLI reset command first
+      try {
+        const { spawn } = await import('child_process');
+        const outputChannel = vscode.window.createOutputChannel('CommitWeave Reset');
+        
+        outputChannel.show();
+        outputChannel.appendLine('Resetting CommitWeave configuration to defaults...');
+        
+        const child = spawn('commitweave', ['reset', '--force'], {
+          cwd: workspaceFolder
+        });
+
+        child.stdout?.on('data', (data) => {
+          outputChannel.append(data.toString());
+        });
+
+        child.stderr?.on('data', (data) => {
+          outputChannel.append(data.toString());
+        });
+
+        child.on('close', (code) => {
+          if (code === 0) {
+            outputChannel.appendLine('✅ Configuration reset successfully!');
+            vscode.window.showInformationMessage('CommitWeave configuration reset to defaults!');
+            this._loadSettings(); // Refresh the UI
+          } else {
+            outputChannel.appendLine(`❌ Reset failed with code ${code}`);
+            this._fallbackReset(workspaceFolder);
+          }
+        });
+      } catch (error) {
+        // Fallback: write default config directly
+        this._fallbackReset(workspaceFolder);
+      }
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to reset configuration: ${error}`);
+    }
+  }
+
+  /**
+   * Fallback reset method that writes default config directly
+   */
+  private async _fallbackReset(workspaceFolder: string): Promise<void> {
+    try {
+      const defaultConfig = {
+        version: "1.0",
+        commitTypes: [
+          { type: "feat", emoji: "✨", description: "A new feature" },
+          { type: "fix", emoji: "🐛", description: "A bug fix" },
+          { type: "docs", emoji: "📚", description: "Documentation only changes" },
+          { type: "style", emoji: "💎", description: "Changes that do not affect the meaning of the code" },
+          { type: "refactor", emoji: "📦", description: "A code change that neither fixes a bug nor adds a feature" },
+          { type: "perf", emoji: "🚀", description: "A code change that improves performance" },
+          { type: "test", emoji: "🚨", description: "Adding missing tests or correcting existing tests" },
+          { type: "build", emoji: "🛠", description: "Changes that affect the build system or external dependencies" },
+          { type: "ci", emoji: "⚙️", description: "Changes to our CI configuration files and scripts" },
+          { type: "chore", emoji: "♻️", description: "Other changes that don't modify src or test files" },
+          { type: "revert", emoji: "🗑", description: "Reverts a previous commit" }
+        ],
+        emojiEnabled: true,
+        conventionalCommits: true,
+        maxSubjectLength: 50,
+        maxBodyLength: 72
+      };
+
+      const configPath = require('path').join(workspaceFolder, 'glinr-commit.json');
+      const fs = require('fs').promises;
+      
+      await fs.writeFile(configPath, JSON.stringify(defaultConfig, null, 2));
+      vscode.window.showInformationMessage('CommitWeave configuration reset to defaults!');
+      this._loadSettings(); // Refresh the UI
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to write default configuration: ${error}`);
+    }
+  }
+
 }
 
 function getNonce() {

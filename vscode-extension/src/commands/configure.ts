@@ -15,3 +15,16 @@ export function registerConfigureCommand(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(disposable);
 }
+
+/**
+ * Execute the configure command
+ */
+export async function executeConfigure() {
+  // Get the extension context - this is a simplified version for lazy loading
+  const extensions = vscode.extensions.all.find(ext => ext.id.includes('commitweave'));
+  if (extensions && extensions.extensionUri) {
+    SettingsPanel.createOrShow(extensions.extensionUri);
+  } else {
+    throw new Error('Extension URI not found');
+  }
+}

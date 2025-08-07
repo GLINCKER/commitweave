@@ -65,5 +65,15 @@ export class InvalidConfigError extends Error {
   }
 }
 
+export class CommitValidationError extends Error {
+  public suggestions: string[];
+  
+  constructor(message: string, suggestions: string[] = []) {
+    super(message);
+    this.name = 'CommitValidationError';
+    this.suggestions = suggestions;
+  }
+}
+
 // Union type for all AI-related errors
-export type AIError = ClaudeRateLimitError | ClaudeValidationError | OpenAIError | NetworkTimeoutError | GitRepoError | InvalidConfigError;
+export type AIError = ClaudeRateLimitError | ClaudeValidationError | OpenAIError | NetworkTimeoutError | GitRepoError | InvalidConfigError | CommitValidationError;

@@ -149,6 +149,116 @@
             background-color: var(--vscode-notificationsErrorIcon-foreground);
             color: var(--vscode-editor-background);
         }
+
+        /* Enhanced Features Styles */
+        .tab-navigation {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--vscode-panel-border);
+        }
+        
+        .tab-button {
+            background: none;
+            border: none;
+            padding: 12px 20px;
+            cursor: pointer;
+            color: var(--vscode-tab-inactiveForeground);
+            border-bottom: 2px solid transparent;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        
+        .tab-button:hover {
+            color: var(--vscode-tab-activeForeground);
+            background-color: var(--vscode-tab-hoverBackground);
+        }
+        
+        .tab-button.active {
+            color: var(--vscode-tab-activeForeground);
+            border-bottom-color: var(--vscode-tab-activeBorder);
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .commit-item {
+            padding: 12px;
+            margin-bottom: 10px;
+            background-color: var(--vscode-list-hoverBackground);
+            border-radius: 6px;
+            border-left: 3px solid var(--vscode-gitDecoration-addedResourceForeground);
+        }
+        
+        .commit-hash {
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--vscode-descriptionForeground);
+        }
+        
+        .commit-message {
+            font-weight: 500;
+            margin: 5px 0;
+        }
+        
+        .commit-meta {
+            font-size: 12px;
+            color: var(--vscode-descriptionForeground);
+        }
+        
+        .template-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            background-color: var(--vscode-list-hoverBackground);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .template-item:hover {
+            background-color: var(--vscode-list-activeSelectionBackground);
+        }
+        
+        .template-title {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .template-preview {
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--vscode-descriptionForeground);
+        }
+        
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .quick-action-btn {
+            padding: 8px 16px;
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        
+        .quick-action-btn:hover {
+            background-color: var(--vscode-button-hoverBackground);
+        }
     </style>
 </head>
 <body>
@@ -157,8 +267,17 @@
         <div style="text-align: center; margin-bottom: 20px; font-size: 0.9em; color: var(--vscode-descriptionForeground);">
             Developed & Published by <strong>GLINR STUDIOS</strong> • <strong>@glincker</strong>
         </div>
+
+        <!-- Enhanced Features Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" onclick="showTab('settings')">⚙️ Settings</button>
+            <button class="tab-button" onclick="showTab('history')">📊 Commit History</button>
+            <button class="tab-button" onclick="showTab('templates')">📝 Templates</button>
+        </div>
         
-        <div class="status-section">
+        <!-- Settings Tab Content -->
+        <div id="settings-tab" class="tab-content active">
+            <div class="status-section">
             <h3>Repository Status</h3>
             <div class="status-item">
                 <span>Git Repository:</span>
@@ -194,13 +313,39 @@
                 
                 <div class="setting-item">
                     <label for="aiProvider">AI Provider</label>
-                    <select id="aiProvider">
+                    <select id="aiProvider" onchange="toggleApiKeyInput()">
                         <option value="openai">OpenAI (GPT models)</option>
                         <option value="anthropic">Anthropic (Claude models)</option>
                         <option value="mock">Mock Provider (for testing)</option>
                     </select>
                     <div class="description">
                         Choose which AI service to use for generating commit messages
+                    </div>
+                </div>
+
+                <div class="setting-item" id="apiKeySection" style="display: none;">
+                    <label for="apiKey">API Key</label>
+                    <input type="password" id="apiKey" placeholder="Enter your API key" style="width: 100%; padding: 8px 12px; background-color: var(--vscode-input-background); border: 1px solid var(--vscode-input-border); border-radius: 4px; color: var(--vscode-input-foreground); font-family: inherit; font-size: inherit;">
+                    <div class="description">
+                        Your API key will be saved to the local glinr-commit.json file. Keep this file secure and avoid committing it to version control.
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="conventionalCommits" />
+                        Enable conventional commits
+                    </label>
+                    <div class="description">
+                        Use conventional commit format (type(scope): description)
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <label for="maxSubjectLength">Max Subject Length</label>
+                    <input type="number" id="maxSubjectLength" value="50" min="20" max="100" style="width: 100px; padding: 6px 10px; background-color: var(--vscode-input-background); border: 1px solid var(--vscode-input-border); border-radius: 4px; color: var(--vscode-input-foreground); font-family: inherit; font-size: inherit;">
+                    <div class="description">
+                        Maximum number of characters for the commit subject line (recommended: 50)
                     </div>
                 </div>
             </div>
@@ -210,11 +355,75 @@
                 <button type="button" class="secondary-button" onclick="loadCurrentSettings()">Reset</button>
                 <button type="button" class="secondary-button" onclick="checkStatus()">Refresh Status</button>
             </div>
+
+            <div class="setting-group">
+                <h3>Configuration Management</h3>
+                <p class="description">Export and import your CommitWeave configuration to share between projects or teams.</p>
+                
+                <div class="quick-actions">
+                    <button class="quick-action-btn" onclick="exportConfig()">📤 Export Config</button>
+                    <button class="quick-action-btn" onclick="importConfig()">📥 Import Config</button>
+                    <button class="quick-action-btn" onclick="resetToDefaults()">🔄 Reset to Defaults</button>
+                </div>
+            </div>
         </form>
         
         <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--vscode-panel-border); font-size: 0.8em; color: var(--vscode-descriptionForeground);">
             <div>🏢 <strong>GLINR STUDIOS</strong> × <strong>GLINCKER</strong></div>
             <div style="margin-top: 5px;">Part of the CommitWeave ecosystem 🧶✨</div>
+        </div>
+        </div> <!-- End Settings Tab -->
+        
+        <!-- Commit History Tab Content -->
+        <div id="history-tab" class="tab-content">
+            <div class="setting-group">
+                <h3>📊 Recent Commits</h3>
+                <div id="commit-history-list">
+                    <div class="status-item">
+                        <span>Loading commit history...</span>
+                        <span class="status-badge status-loading">⏳ Loading</span>
+                    </div>
+                </div>
+                
+                <div class="quick-actions">
+                    <button class="quick-action-btn" onclick="refreshHistory()">🔄 Refresh</button>
+                    <button class="quick-action-btn" onclick="validateLastCommit()">✅ Validate Last</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Templates Tab Content -->
+        <div id="templates-tab" class="tab-content">
+            <div class="setting-group">
+                <h3>📝 Quick Commit Templates</h3>
+                <div id="template-list">
+                    <div class="template-item" onclick="useTemplate('feat', 'add {description}')">
+                        <div class="template-title">✨ Add New Feature</div>
+                        <div class="template-preview">feat: add {description}</div>
+                    </div>
+                    <div class="template-item" onclick="useTemplate('fix', 'fix {issue} in {component}')">
+                        <div class="template-title">🐛 Fix Bug</div>
+                        <div class="template-preview">fix: fix {issue} in {component}</div>
+                    </div>
+                    <div class="template-item" onclick="useTemplate('docs', 'update {what} documentation')">
+                        <div class="template-title">📚 Update Documentation</div>
+                        <div class="template-preview">docs: update {what} documentation</div>
+                    </div>
+                    <div class="template-item" onclick="useTemplate('refactor', 'refactor {component}')">
+                        <div class="template-title">♻️ Refactor Code</div>
+                        <div class="template-preview">refactor: refactor {component}</div>
+                    </div>
+                    <div class="template-item" onclick="useTemplate('test', 'add tests for {component}')">
+                        <div class="template-title">✅ Add Tests</div>
+                        <div class="template-preview">test: add tests for {component}</div>
+                    </div>
+                </div>
+                
+                <div class="quick-actions">
+                    <button class="quick-action-btn" onclick="openQuickCommit()">⚡ Quick Commit</button>
+                    <button class="quick-action-btn" onclick="openFullCLI()">🧶 Full CommitWeave</button>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -251,7 +460,10 @@
             
             const settings = {
                 emojiEnabled: document.getElementById('emojiEnabled').checked,
-                aiProvider: document.getElementById('aiProvider').value
+                aiProvider: document.getElementById('aiProvider').value,
+                apiKey: document.getElementById('apiKey').value,
+                conventionalCommits: document.getElementById('conventionalCommits').checked,
+                maxSubjectLength: parseInt(document.getElementById('maxSubjectLength').value)
             };
             
             vscode.postMessage({
@@ -259,6 +471,18 @@
                 settings: settings
             });
         });
+
+        // Toggle API key input based on provider selection
+        function toggleApiKeyInput() {
+            const provider = document.getElementById('aiProvider').value;
+            const apiKeySection = document.getElementById('apiKeySection');
+            
+            if (provider === 'mock') {
+                apiKeySection.style.display = 'none';
+            } else {
+                apiKeySection.style.display = 'block';
+            }
+        }
         
         // Handle messages from the extension
         window.addEventListener('message', event => {
@@ -269,6 +493,12 @@
                     // Update the form with current settings
                     document.getElementById('emojiEnabled').checked = message.settings.emojiEnabled;
                     document.getElementById('aiProvider').value = message.settings.aiProvider;
+                    document.getElementById('apiKey').value = message.settings.apiKey || '';
+                    document.getElementById('conventionalCommits').checked = message.settings.conventionalCommits !== false;
+                    document.getElementById('maxSubjectLength').value = message.settings.maxSubjectLength || 50;
+                    
+                    // Toggle API key section based on provider
+                    toggleApiKeyInput();
                     break;
                     
                 case 'settingsSaved':
@@ -297,6 +527,122 @@
                     break;
             }
         });
+
+        // Enhanced Features Functions
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+            
+            // Load tab-specific data
+            if (tabName === 'history') {
+                loadCommitHistory();
+            }
+        }
+
+        function loadCommitHistory() {
+            const historyList = document.getElementById('commit-history-list');
+            historyList.innerHTML = '<div class="status-item"><span>Loading commit history...</span><span class="status-badge status-loading">⏳ Loading</span></div>';
+            
+            // Request commit history from extension
+            vscode.postMessage({
+                command: 'getCommitHistory'
+            });
+        }
+
+        function refreshHistory() {
+            loadCommitHistory();
+        }
+
+        function validateLastCommit() {
+            vscode.postMessage({
+                command: 'validateCommit'
+            });
+        }
+
+        function useTemplate(type, template) {
+            vscode.postMessage({
+                command: 'useTemplate',
+                type: type,
+                template: template
+            });
+        }
+
+        function openQuickCommit() {
+            vscode.postMessage({
+                command: 'openQuickCommit'
+            });
+        }
+
+        function openFullCLI() {
+            vscode.postMessage({
+                command: 'openFullCLI'
+            });
+        }
+
+        // Configuration management functions
+        function exportConfig() {
+            vscode.postMessage({
+                command: 'exportConfig'
+            });
+        }
+
+        function importConfig() {
+            vscode.postMessage({
+                command: 'importConfig'
+            });
+        }
+
+        function resetToDefaults() {
+            if (confirm('Are you sure you want to reset all settings to their default values? This cannot be undone.')) {
+                vscode.postMessage({
+                    command: 'resetToDefaults'
+                });
+            }
+        }
+
+        // Handle messages from the extension
+        window.addEventListener('message', event => {
+            const message = event.data;
+            switch (message.command) {
+                case 'updateCommitHistory':
+                    updateCommitHistoryDisplay(message.commits);
+                    break;
+            }
+        });
+
+        function updateCommitHistoryDisplay(commits) {
+            const historyList = document.getElementById('commit-history-list');
+            
+            if (!commits || commits.length === 0) {
+                historyList.innerHTML = '<div class="status-item"><span>No commits found</span><span class="status-badge status-warning">⚠️ Empty</span></div>';
+                return;
+            }
+
+            historyList.innerHTML = commits.map(commit => `
+                <div class="commit-item">
+                    <div class="commit-hash">${commit.hash}</div>
+                    <div class="commit-message">${commit.message}</div>
+                    <div class="commit-meta">
+                        <span>${commit.author}</span> • 
+                        <span>${commit.date}</span>
+                        ${commit.isValid ? '<span style="color: var(--vscode-gitDecoration-addedResourceForeground);">✅ Valid</span>' : '<span style="color: var(--vscode-gitDecoration-deletedResourceForeground);">❌ Invalid</span>'}
+                    </div>
+                </div>
+            `).join('');
+        }
     </script>
 </body>
 </html>

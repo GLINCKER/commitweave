@@ -88,11 +88,14 @@ async function collectUserInput(config: Config): Promise<CommitInput | null> {
       chalk = (await lazy(() => import('chalk'))).default;
     }
     
-    const typeChoices = config.commitTypes.map((type: CommitType) => ({
-      name: `${type.emoji} ${type.type}`,
-      message: `${type.emoji} ${chalk.bold(type.type)} - ${type.description}`,
-      value: type.type
-    }));
+    const typeChoices = config.commitTypes.map((type: CommitType) => {
+      const emoji = config.emojiEnabled ? `${type.emoji} ` : '';
+      return {
+        name: `${emoji}${type.type}`,
+        message: `${emoji}${chalk.bold(type.type)} - ${type.description}`,
+        value: type.type
+      };
+    });
 
     const answers = await enquirer.prompt([
       {

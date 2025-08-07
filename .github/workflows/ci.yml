@@ -1,103 +1,255 @@
-name: CI
+name: 🧶 CommitWeave CI
 
 on:
   push:
-    branches: ["*"]  # Run on all branches (including develop, feature branches)
+    branches: [ main, develop, "feature/*" ]
   pull_request:
-    branches: [main]  # Run on PRs to main
+    branches: [ main, develop ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
+  # Linting and Code Quality
+  lint:
+    name: 🔍 Lint & Code Quality
     runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 🔧 Install dependencies
+        run: npm ci
+
+      - name: 🔍 Run ESLint
+        run: npm run lint
+        continue-on-error: false
+
+      - name: 🎨 Check Prettier formatting
+        run: npx prettier --check "src/**/*.{ts,js,json}" "bin/**/*.{ts,js}" "tests/**/*.{ts,js}"
+        continue-on-error: false
+
+      - name: 🔬 TypeScript type checking
+        run: npx tsc --noEmit
+
+  # Main CLI Testing
+  test:
+    name: 🧪 Test CLI (${{ matrix.os }}, Node ${{ matrix.node-version }})
+    runs-on: ${{ matrix.os }}
+    needs: lint
     
     strategy:
       matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
         node-version: [18, 20, 22]
 
     steps:
-      - name: Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: 📦 Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: 🔧 Install dependencies
         run: npm ci
 
-      - name: Run TypeScript check
-        run: npx tsc --noEmit
-
-      - name: Build package
+      - name: 🏗️ Build package
         run: npm run build
 
-      - name: Test package structure
+      - name: 🧪 Run tests
+        run: npm test
+
+      - name: ⚡ Performance benchmark
+        run: npm run bench
+        env:
+          COMMITWEAVE_DEBUG_PERF: true
+
+      - name: 🔍 Test CLI functionality
+        run: |
+          npx tsx scripts/test-local.ts
+          npx tsx scripts/test-cli-functions.ts
+
+      - name: 📦 Test package structure
         run: |
           ls -la dist/
           test -f dist/index.js
           test -f dist/index.d.ts
           test -f dist/bin.js
-          test -x dist/bin.js
 
-      - name: Run custom tests
-        run: |
-          npx tsx scripts/test-local.ts
-          npx tsx scripts/test-cli-functions.ts
+      - name: 🎯 Test package installation
+        run: npm pack --dry-run
 
-      - name: Test package installation
-        run: |
-          npm pack --dry-run
-          echo "Package structure verified"
-
-  vscode-extension:
+  # VS Code Extension Testing
+  test-extension:
+    name: 🧩 Test VS Code Extension
     runs-on: ubuntu-latest
+    needs: lint
     
     steps:
-      - name: Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
           cache: 'npm'
 
-      - name: Install extension dependencies
-        run: |
-          cd vscode-extension
-          npm ci
+      - name: 🔧 Install main dependencies
+        run: npm ci
 
-      - name: Build VS Code extension
-        run: |
-          cd vscode-extension
-          npm run build
+      - name: 🏗️ Build main project
+        run: npm run build
 
-      - name: Lint extension code
-        run: |
-          cd vscode-extension
-          npx tsc --noEmit
+      - name: 📁 Install extension dependencies
+        working-directory: ./vscode-extension
+        run: npm ci
 
-      - name: Run extension tests
-        run: |
-          cd vscode-extension
-          xvfb-run -a npm test
+      - name: 🏗️ Build extension
+        working-directory: ./vscode-extension
+        run: npm run build
 
-      - name: Package VSIX
-        run: |
-          cd vscode-extension
-          npx vsce package --no-yarn
+      - name: 🔬 Lint extension code
+        working-directory: ./vscode-extension
+        run: npx tsc --noEmit
 
-      - name: Upload VSIX artifact
+      - name: 🧪 Run extension tests
+        working-directory: ./vscode-extension
+        run: xvfb-run -a npm test
+
+      - name: 📦 Package VSIX
+        working-directory: ./vscode-extension
+        run: npx vsce package --no-yarn
+
+      - name: 📤 Upload VSIX artifact
         uses: actions/upload-artifact@v4
         with:
-          name: commitweave-vscode-extension
+          name: commitweave-vscode-extension-${{ github.sha }}
           path: vscode-extension/*.vsix
-          retention-days: 30
+          retention-days: 90
 
-      - name: Test VSIX structure
+      - name: ✅ Test VSIX structure
+        working-directory: ./vscode-extension
         run: |
-          cd vscode-extension
           ls -la *.vsix
-          echo "VSIX package created successfully"
+          echo "✅ VSIX package created successfully"
+
+  # Security and Quality Checks
+  security:
+    name: 🔒 Security & Quality
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 🔧 Install dependencies
+        run: npm ci
+
+      - name: 🛡️ Run security audit
+        run: npm audit --audit-level=moderate
+
+      - name: 🔍 Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+
+      - name: 🏗️ Build for analysis
+        run: npm run build
+
+      - name: 🛡️ Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  # Build and Package
+  build:
+    name: 🏗️ Build & Package
+    runs-on: ubuntu-latest
+    needs: [test, test-extension, security]
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 🔧 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build project
+        run: npm run build
+
+      - name: 📦 Create npm package
+        run: npm pack
+
+      - name: 📤 Upload CLI package
+        uses: actions/upload-artifact@v4
+        with:
+          name: commitweave-cli-${{ github.sha }}
+          path: '*.tgz'
+          retention-days: 90
+
+      - name: 📊 Generate build report
+        run: |
+          echo "## 🎯 Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Node.js Version**: $(node --version)" >> $GITHUB_STEP_SUMMARY
+          echo "- **npm Version**: $(npm --version)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Package Size**: $(ls -lh *.tgz | awk '{print $5}')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Status**: ✅ Success" >> $GITHUB_STEP_SUMMARY
+
+  # Summary Job
+  ci-success:
+    name: ✅ CI Complete
+    runs-on: ubuntu-latest
+    needs: [lint, test, test-extension, security, build]
+    if: always()
+
+    steps:
+      - name: 🎉 All checks passed
+        if: ${{ needs.lint.result == 'success' && needs.test.result == 'success' && needs.test-extension.result == 'success' && needs.security.result == 'success' && needs.build.result == 'success' }}
+        run: |
+          echo "🎉 All CI checks passed successfully!"
+          echo "## ✅ CI Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Linting**: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- **CLI Tests**: ✅ Passed (3 OS × 3 Node versions)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Extension Tests**: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- **Security**: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build**: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🚀 Ready for release!" >> $GITHUB_STEP_SUMMARY
+
+      - name: ❌ Some checks failed
+        if: ${{ needs.lint.result != 'success' || needs.test.result != 'success' || needs.test-extension.result != 'success' || needs.security.result != 'success' || needs.build.result != 'success' }}
+        run: |
+          echo "❌ Some CI checks failed!"
+          echo "## ❌ CI Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Linting**: ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **CLI Tests**: ${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Extension Tests**: ${{ needs.test-extension.result == 'success' && '✅ Passed' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Security**: ${{ needs.security.result == 'success' && '✅ Passed' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build**: ${{ needs.build.result == 'success' && '✅ Passed' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ Please fix failing checks before merging." >> $GITHUB_STEP_SUMMARY
+          exit 1

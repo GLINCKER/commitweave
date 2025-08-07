@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Community Discussions
+    url: https://github.com/GLINCKER/commitweave/discussions
+    about: Ask questions, share ideas, and get community support
+  - name: 📚 Documentation
+    url: https://github.com/GLINCKER/commitweave/wiki
+    about: Check out our comprehensive documentation and guides
+  - name: 👨‍💻 Support Email
+    url: mailto:support@glincker.com
+    about: Direct support for urgent issues or private matters
+  - name: 🚀 Feature Roadmap
+    url: https://github.com/GLINCKER/commitweave/projects
+    about: View our development roadmap and upcoming features

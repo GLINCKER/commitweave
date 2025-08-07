@@ -23,7 +23,7 @@ export function stripSecrets<T extends Record<string, any>>(config: T): T {
       const fullPath = path ? `${path}.${key}` : key;
       
       // Check if key matches secret pattern
-      if (/key|token|secret/i.test(key)) {
+      if (/key|token|secret|password/i.test(key)) {
         if (typeof value === 'string' && value.length > 0) {
           // Mask the value but show it exists
           obj[key] = '***REDACTED***';

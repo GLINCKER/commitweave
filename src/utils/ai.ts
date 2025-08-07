@@ -50,7 +50,9 @@ export async function generateCommitSuggestion(
   const provider = await createAIProvider(options);
   
   if (!provider.isConfigured() && options?.provider && options.provider !== 'mock') {
-    console.warn(`AI provider ${options.provider} not configured, falling back to mock`);
+    const chalk = (await lazy(() => import('chalk'))).default;
+    console.log(chalk.yellow(`⚠️  ${options.provider} provider not configured, falling back to mock AI`));
+    console.log(chalk.gray(`   💡 Configure your ${options.provider} API key to enable real AI suggestions`));
     const fallbackProvider = await createAIProvider({ ...options, provider: 'mock' });
     return fallbackProvider.generateCommitMessage(diff, options);
   }
@@ -110,7 +112,9 @@ export async function generateAISummary(
     };
   } catch (error) {
     // Fallback to mock if AI provider fails
-    console.warn('AI provider failed, falling back to mock:', error);
+    const chalk = (await lazy(() => import('chalk'))).default;
+    console.log(chalk.yellow('⚠️  AI provider encountered an error, falling back to mock AI'));
+    console.log(chalk.gray(`   Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
     
     const mockProvider = new MockAIProvider();
     const suggestion = await mockProvider.generateCommitMessage(diff);

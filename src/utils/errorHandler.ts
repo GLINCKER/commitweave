@@ -6,7 +6,8 @@ import {
   OpenAIError, 
   NetworkTimeoutError, 
   GitRepoError, 
-  InvalidConfigError 
+  InvalidConfigError,
+  CommitValidationError 
 } from '../types/ai.js';
 
 /**
@@ -52,6 +53,14 @@ function getErrorMessage(error: Error): { message: string; suggestion?: string }
     return {
       message: `Configuration error: ${error.message}`,
       suggestion: 'Run "commitweave init" to reset your configuration or check glinr-commit.json'
+    };
+  }
+
+  if (error instanceof CommitValidationError) {
+    const suggestions = error.suggestions.length > 0 ? error.suggestions.join('\n   ') : 'Follow conventional commit guidelines';
+    return {
+      message: `Commit validation failed: ${error.message}`,
+      suggestion: `Fix the commit message:\n   ${suggestions}`
     };
   }
 
@@ -117,7 +126,8 @@ export function isAIError(error: unknown): error is AIError {
          error instanceof OpenAIError ||
          error instanceof NetworkTimeoutError ||
          error instanceof GitRepoError ||
-         error instanceof InvalidConfigError;
+         error instanceof InvalidConfigError ||
+         error instanceof CommitValidationError;
 }
 
 /**
